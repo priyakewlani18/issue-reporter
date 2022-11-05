@@ -10314,8 +10314,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.generateSummary = void 0;
 function* generateSummary(title, sections) {
     yield h3(title);
-    yield p("The table below shows data for last few months, Issues Created in particular categories. The table tells for a given month, how many issues remain open till now and how many were closed in that month. \
-    but it doesn't mean how many were opened and closed in same month ");
+    yield p("The table below shows data for last few months,There might we some error(approximate data) as we are not tracing issues which are very old as we can not go back in history too much and we make a since query");
     yield h3('Summary');
     yield '| Section Title | Labels | Threshold | Monthly Count | Totals Open Now |';
     yield '| :--- |  :----:  |  :----:  |  :----:  |  :----:  |';
