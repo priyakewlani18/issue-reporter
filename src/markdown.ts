@@ -6,9 +6,10 @@ import {arrayToTable} from "./convertotable"
 
 export function* generateSummary(title: string, sections: Section[]) {
     yield h3(title);
-    yield p('The table below shows data for last few months, Issues Created in particular categories')
+    yield p("The table below shows data for last few months, Issues Created in particular categories. The table tells for a given month, how many issues remain open till now and how many were closed in that month. \
+    but it doesn't mean how many were opened and closed in same month ")
     yield h3('Summary');
-    yield '| Section Title | Labels | Threshold | Monthly Count | Status |';
+    yield '| Section Title | Labels | Threshold | Monthly Count | Totals |';
     yield '| :--- |  :----:  |  :----:  |  :----:  |  :----:  |';
     for (const section of sections) {
         yield* sectionSummary(section);
@@ -65,7 +66,7 @@ function* sectionSummary(section: Section) {
     }
     let convertedata = createtableMonthly(data_list)
     console.log(convertedata)
-    yield  section_prefix + convertedata + `|`;
+    yield  section_prefix + convertedata + `|`+ `${pervious_count_open}`+ `|`;
     // const redStatusIdFragment = '%EF%B8%8F';
 
     // const sectionAnchor = '#'
