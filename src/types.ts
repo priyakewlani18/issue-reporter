@@ -13,7 +13,7 @@ export interface ConfigSection {
     labels: string[],
     excludeLabels?: string[],
     threshold: number,
-    months:number,
+    months?:number,
     since?: string
 }
 

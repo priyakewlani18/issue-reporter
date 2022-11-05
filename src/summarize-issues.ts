@@ -23,7 +23,8 @@ export async function run(inputs: {
 
     for (const configSection of configSections) {
         let issues =[];
-        for( var mt = 0; mt < configSection.months; mt++){
+        let configmonths = configSection.months || 3;
+        for( var mt = 0; mt < configmonths; mt++){
             
             let current_date = new Date();
             const MONTHS_AGO = new Date(current_date.getFullYear(), current_date.getMonth(), 1);
