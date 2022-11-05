@@ -10313,6 +10313,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.generateSummary = void 0;
 function* generateSummary(title, sections) {
     yield h3(title);
+    yield p('The table below shows data for last 3 months, Issues Created in particular categories');
     yield h3('Summary');
     yield '| Section Title | Labels | Threshold | Monthly Count | Status |';
     yield '| :--- |  :----:  |  :----:  |  :----:  |  :----:  |';
@@ -10366,25 +10367,26 @@ function* sectionSummary(section) {
     //     + `-${hyphenate(section.section)}-query`;
     // yield `| ${link(section.section, sectionAnchor)} | ${section.labels.map(code).concat((section.excludeLabels || []).map(x => strike(code(x)))).join(', ')} | ${section.threshold} | ${section.issues.length} | ${section.status} |`;
 }
-// function* sectionDetails(section: Section, repoContext: RepoContext) {
-//     const owners = sumIssuesForOwners(section.issues);
-//     yield h3(`${section.status} ${section.section} ${link('(query)', issuesQuery(repoContext, section.labels, section.excludeLabels || []))}`);
-//     yield `Total: ${section.issues.length}\n`;
-//     yield `Threshold: ${section.threshold}\n`;
-//     yield `Labels: ${section.labels.map(code).concat((section.excludeLabels|| []).map(x => strike(code(x)))).join(', ')}\n`
-//     yield '| Owner | Count |';
-//     yield '| -- | -- |';
-//     // Sort the table in descending order of issue count
-//     const ownersByIssueCount = Object.keys(owners).sort((a, b) => owners[b] - owners[a]);
-//     for (const key of ownersByIssueCount) {
-//         // `key` is the owner's login
-//         const queryUrl = issuesQuery(repoContext, section.labels, section.excludeLabels || [], key);
-//         yield `| ${link(key, queryUrl)} | ${owners[key]} |`;
-//     }
-// }
+function* sectionDetails(section, repoContext) {
+    const owners = sumIssuesForOwners(section.issues);
+    yield h3(`${section.section} ${link('(query)', issuesQuery(repoContext, section.labels, section.excludeLabels || []))}`);
+    yield `Total: ${section.issues.length}\n`;
+    yield `Threshold: ${section.threshold}\n`;
+    yield `Labels: ${section.labels.map(code).concat((section.excludeLabels || []).map(x => strike(code(x)))).join(', ')}\n`;
+    yield '| Owner | Count |';
+    yield '| -- | -- |';
+    // Sort the table in descending order of issue count
+    const ownersByIssueCount = Object.keys(owners).sort((a, b) => owners[b] - owners[a]);
+    for (const key of ownersByIssueCount) {
+        // `key` is the owner's login
+        const queryUrl = issuesQuery(repoContext, section.labels, section.excludeLabels || [], key);
+        yield `| ${link(key, queryUrl)} | ${owners[key]} |`;
+    }
+}
 // Markdown helpers -- not the least bit safe for handling user input, so don't copy these for general use.
 const h2 = (text) => `## ${text}`;
 const h3 = (text) => `### ${text}`;
+const p = (text) => `${text}`;
 const link = (text, href) => `[${text}](${href})`;
 const code = (text) => `\`${text}\``;
 const strike = (text) => `\~${text}\~`;
