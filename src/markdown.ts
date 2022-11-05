@@ -6,7 +6,7 @@ import {arrayToTable} from "./convertotable"
 
 export function* generateSummary(title: string, sections: Section[]) {
     yield h3(title);
-    yield p('The table below shows data for last 3 months, Issues Created in particular categories')
+    yield p('The table below shows data for last few months, Issues Created in particular categories')
     yield h3('Summary');
     yield '| Section Title | Labels | Threshold | Monthly Count | Status |';
     yield '| :--- |  :----:  |  :----:  |  :----:  |  :----:  |';

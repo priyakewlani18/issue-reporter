@@ -24,6 +24,7 @@ export async function run(inputs: {
     for (const configSection of configSections) {
         let issues =[];
         let configmonths = configSection.months || 3;
+        
         for( var mt = 0; mt < configmonths; mt++){
             
             let current_date = new Date();
@@ -36,6 +37,7 @@ export async function run(inputs: {
             const issues_open = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], date_text, 'open');
             const issues_closed = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], date_text, 'closed');
             issues.push({month_text : month,  issues_open: issues_open, issues_closed:issues_closed})
+            issues.pop() // pulling out last metrics as it would be incorrect always , because we don't have a base value
 
         }
         console.log(issues)
