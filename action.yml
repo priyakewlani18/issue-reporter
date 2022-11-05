@@ -1,0 +1,22 @@
+name: 'issue-reporter'
+description: 'GitHub Action that generates a Markdown summary of the issues in a repo on monthly basis'
+author: 'Ashish Kumar'
+branding:
+  icon: bar-chart-2
+  color: white
+inputs:
+  title:
+    description: 'title of the report'
+    required: true
+  configPath:
+    description: 'relative path from the repo root to a JSON file describing the sections of the report'
+    required: true
+  outputPath:
+    description: 'relative path from the repo root to write the report file'
+    required: true
+  token:
+    description: 'pass secrets.GITHUB_TOKEN'
+    required: true
+runs:
+  using: 'node12'
+  main: 'dist/index.js'

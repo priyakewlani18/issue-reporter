@@ -1,0 +1,37 @@
+{
+  "name": "issue-reporter",
+  "version": "0.0.0",
+  "private": true,
+  "description": "GitHub Action to generate a Markdown summary of the issues in a repo on monthly basis",
+  "main": "lib/main.js",
+  "scripts": {
+    "build": "tsc",
+    "pack": "ncc build",
+    "test": "jest",
+    "all": "npm run build && npm run pack && npm test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ashishonce/issue-reporter.git"
+  },
+  "keywords": [
+    "actions",
+    "node"
+  ],
+  "author": "Ashish Kumar",
+  "license": "MIT",
+  "dependencies": {
+    "@actions/core": "^1.6.0",
+    "@actions/github": "^2.2.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^27.0.2",
+    "@types/node": "^12.20.36",
+    "@zeit/ncc": "^0.20.5",
+    "jest": "^27.3.1",
+    "jest-circus": "^27.3.1",
+    "js-yaml": "^3.14.1",
+    "ts-jest": "^27.0.7",
+    "typescript": "^3.9.10"
+  }
+}
