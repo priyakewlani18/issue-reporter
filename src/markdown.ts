@@ -51,15 +51,17 @@ function* sectionSummary(section: Section) {
         + `-${hyphenate(section.section)}-query`;
      
     const section_prefix =  `| ${link(section.section, sectionAnchor)} | ${section.labels.map(code).concat((section.excludeLabels || []).map(x => strike(code(x)))).join(', ')} | ${section.threshold}|`
-    let pervious_count = 0
+    let pervious_count_open = 0;
+    let pervious_count_close = 0
     //const issues = section.issues;
     
     let data_list = []
     for( const sect of section.issues){
-        data_list.push({ month: sect.month_text , count: (sect.issues.length - pervious_count)})
+        data_list.push({ month: sect.month_text , open_count: (sect.issues_open.length - pervious_count_open), close_count:(sect.issues_closed.length - pervious_count_close) })
 
         //section_middle = section_middle + `${sect.month_text} : ${sect.issues.length - pervious_count}` + `,`
-        pervious_count = sect.issues.length
+        pervious_count_close = sect.issues_closed.length
+        pervious_count_open = sect.issues_open.length
     }
     let convertedata = createtableMonthly(data_list)
     console.log(convertedata)

@@ -4505,8 +4505,9 @@ async function run(inputs) {
             MONTHS_AGO.setMonth(MONTHS_AGO.getMonth() - mt);
             const month = MONTHS_AGO.toLocaleString('default', { month: 'long' });
             var date_text = MONTHS_AGO.toISOString().split('T')[0];
-            const issues_local = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], date_text, 'closed');
-            issues.push({ month_text: month, issues: issues_local });
+            const issues_open = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], date_text, 'open');
+            const issues_closed = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], date_text, 'closed');
+            issues.push({ month_text: month, issues_open: issues_open, issues_closed: issues_closed });
         }
         console.log(issues);
         sections.push(Object.assign(Object.assign({}, configSection), { issues }));
@@ -10350,13 +10351,15 @@ function* sectionSummary(section) {
         + ('❤️🥵')
         + `-${hyphenate(section.section)}-query`;
     const section_prefix = `| ${link(section.section, sectionAnchor)} | ${section.labels.map(code).concat((section.excludeLabels || []).map(x => strike(code(x)))).join(', ')} | ${section.threshold}|`;
-    let pervious_count = 0;
+    let pervious_count_open = 0;
+    let pervious_count_close = 0;
     //const issues = section.issues;
     let data_list = [];
     for (const sect of section.issues) {
-        data_list.push({ month: sect.month_text, count: (sect.issues.length - pervious_count) });
+        data_list.push({ month: sect.month_text, open_count: (sect.issues_open.length - pervious_count_open), close_count: (sect.issues_closed.length - pervious_count_close) });
         //section_middle = section_middle + `${sect.month_text} : ${sect.issues.length - pervious_count}` + `,`
-        pervious_count = sect.issues.length;
+        pervious_count_close = sect.issues_closed.length;
+        pervious_count_open = sect.issues_open.length;
     }
     let convertedata = createtableMonthly(data_list);
     console.log(convertedata);

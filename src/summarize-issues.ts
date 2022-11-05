@@ -33,8 +33,9 @@ export async function run(inputs: {
             
             const month = MONTHS_AGO.toLocaleString('default', { month: 'long' });
             var date_text = MONTHS_AGO.toISOString().split('T')[0]
-            const issues_local = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], date_text, 'closed');
-            issues.push({month_text : month,  issues: issues_local})
+            const issues_open = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], date_text, 'open');
+            const issues_closed = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], date_text, 'closed');
+            issues.push({month_text : month,  issues_open: issues_open, issues_closed:issues_closed})
 
         }
         console.log(issues)
