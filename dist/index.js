@@ -10339,7 +10339,7 @@ function createtableMonthly(sections) {
         return `<tr>${$tds.join('')}</tr>`;
     });
     let $body = `<tbody>${$rows.join('')}</tbody>`;
-    let rst = `<table>${$body}</table>`;
+    let rst = `<table>${$header} ${$body}</table>`;
     return rst;
 }
 function* sectionSummary(section) {
