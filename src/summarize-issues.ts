@@ -33,7 +33,7 @@ export async function run(inputs: {
             
             const month = MONTHS_AGO.toLocaleString('default', { month: 'long' });
             var date_text = MONTHS_AGO.toISOString().split('T')[0]
-            const issues_local = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], date_text);
+            const issues_local = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], date_text, 'closed');
             issues.push({month_text : month,  issues: issues_local})
 
         }
@@ -54,7 +54,7 @@ export async function run(inputs: {
 }
 
 // See https://octokit.github.io/rest.js/v17#issues-list-for-repo.
-async function queryIssues(octokit: Octokit, repoContext: RepoContext, labels: string[], excludeLabels: string[], since: string): Promise<Issue[]> {
+async function queryIssues(octokit: Octokit, repoContext: RepoContext, labels: string[], excludeLabels: string[], since: string, state:string): Promise<Issue[]> {
     return await octokit.paginate(
         // There's a bug in the Octokit type declaration for `paginate`.
         // It won't let you use the endpoint method as documented: https://octokit.github.io/rest.js/v17#pagination.
@@ -64,7 +64,7 @@ async function queryIssues(octokit: Octokit, repoContext: RepoContext, labels: s
         {
             ...repoContext,
             labels: labels.join(','),
-            state: 'open',
+            state: state,
             since: since    
         },
         (response: Octokit.Response<Octokit.IssuesListForRepoResponse>) => response.data.filter(issue => filterIssue(issue, excludeLabels)));
