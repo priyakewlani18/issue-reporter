@@ -14,7 +14,8 @@ export interface ConfigSection {
     excludeLabels?: string[],
     threshold: number,
     months?:number,
-    since?: string
+    since?: string, 
+    description?:string
 }
 
 // What comes out of the config file plus whatever else we need to write the report
