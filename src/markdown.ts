@@ -50,7 +50,7 @@ function* sectionSummary(section: Section) {
         + ('❤️🥵')
         + `-${hyphenate(section.section)}-query`;
      
-    const section_prefix =  `| ${link(section.section, sectionAnchor)} | ${section.threshold || "" }   | ${section.labels.map(code).concat((section.excludeLabels || []).map(x => strike(code(x)))).join(', ')} | ${section.threshold}|`
+    const section_prefix =  `| ${link(section.section, sectionAnchor)} | ${section.description || "" }   | ${section.labels.map(code).concat((section.excludeLabels || []).map(x => strike(code(x)))).join(', ')} | ${section.threshold}|`
     let pervious_count_open = 0;
     let pervious_count_close = 0
     //const issues = section.issues;
