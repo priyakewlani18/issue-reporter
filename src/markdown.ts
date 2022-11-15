@@ -1,5 +1,6 @@
 import type { Issue, RepoContext, Section } from './types';
 import {arrayToTable} from "./convertotable"
+import { getStatus } from './status';
 
 
 
@@ -8,8 +9,8 @@ export function* generateSummary(title: string, sections: Section[]) {
     yield h3(title);
     yield p("The table below shows data for last few months,There might we some error(approximate data) as we are not tracing issues which are very old as we can not go back in history too much and we make a since query")
     yield h3('Summary');
-    yield '| Section Title | description | Labels | Threshold | Monthly Count | Totals Open Now |';
-    yield '| :--- |  :----: | :----: |  :----:  |  :----:  |  :----:  |';
+    yield '| Section Title | description | Labels | Threshold | Monthly Count | Totals Open Now | Status|';
+    yield '| :--- |  :----: | :----: |  :----:  |  :----:  |  :----: | :----: ';
     for (const section of sections) {
         yield* sectionSummary(section);
     }
@@ -50,7 +51,7 @@ function* sectionSummary(section: Section) {
         + ('❤️🥵')
         + `-${hyphenate(section.section)}-query`;
      
-    const section_prefix =  `| ${link(section.section, sectionAnchor)} | ${section.description || "" }   | ${section.labels.map(code).concat((section.excludeLabels || []).map(x => strike(code(x)))).join(', ')} | ${section.threshold}|`
+    
     let pervious_count_open = 0;
     let pervious_count_close = 0
 
@@ -62,8 +63,9 @@ function* sectionSummary(section: Section) {
         pervious_count_open = sect.issues_open.length
     }
     let convertedata = createtableMonthly(data_list)
-    
-    yield  section_prefix + convertedata + `|`+ `${pervious_count_open}`+ `|`;
+    const section_prefix =  `| ${link(section.section, sectionAnchor)} | ${section.description || "" }   | ${section.labels.map(code).concat((section.excludeLabels || []).map(x => strike(code(x)))).join(', ')} | ${section.threshold}|`
+    let sectionstatus =  getStatus(pervious_count_open, section.threshold)
+    yield  section_prefix + convertedata + `|`+ `${pervious_count_open}`+ `|` + `${sectionstatus}` + `|`;
 
     // yield `| ${link(section.section, sectionAnchor)} | ${section.labels.map(code).concat((section.excludeLabels || []).map(x => strike(code(x)))).join(', ')} | ${section.threshold} | ${section.issues.length} | ${section.status} |`;
 }
