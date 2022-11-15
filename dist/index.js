@@ -4534,7 +4534,7 @@ function filterIssue(issue, excludeLabels) {
 }
 function generateReport(title, sections, repoContext) {
     return Array.from([
-        ...markdown.generateSummary(title, sections),
+        ...markdown.generateSummary(title, sections, repoContext),
     ]).join('\n');
 }
 
@@ -10313,14 +10313,14 @@ module.exports = (promise, onFinally) => {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.generateSummary = void 0;
 const status_1 = __webpack_require__(895);
-function* generateSummary(title, sections) {
+function* generateSummary(title, sections, repoContext) {
     yield h3(title);
     yield p("The table below shows data for last few months,There might we some error(approximate data) as we are not tracing issues which are very old as we can not go back in history too much and we make a since query");
     yield h3('Summary');
     yield '| Section Title | description | Labels | Threshold | Monthly Count | Totals Open Now | Status|';
     yield '| :--- |  :----: | :----: |  :----:  |  :----:  |  :----: | :----: ';
     for (const section of sections) {
-        yield* sectionSummary(section);
+        yield* sectionSummary(section, repoContext);
     }
 }
 exports.generateSummary = generateSummary;
@@ -10343,14 +10343,16 @@ function createtableMonthly(sections) {
     let rst = `<table>${$header} ${$body}</table>`;
     return rst;
 }
-function* sectionSummary(section) {
+function* sectionSummary(section, repoContext) {
     // When generating header links, the red status needs some additional characters at the front because of the emoji it uses.
     // However GitHub-Flavored Markdown generates IDs for its headings, the other statuses aren't affected and just drop theirs.
     // It probably has to do with the Unicode ranges.
     const redStatusIdFragment = '%EF%B8%8F';
-    const sectionAnchor = '#'
+    let issueQuery = issuesQuery(repoContext, section.labels, section.excludeLabels || []);
+    let sectionAnchor = '#'
         + ('❤️🥵')
         + `-${hyphenate(section.section)}-query`;
+    sectionAnchor = issueQuery;
     let pervious_count_open = 0;
     let pervious_count_close = 0;
     let data_list = [];

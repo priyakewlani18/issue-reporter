@@ -3,7 +3,6 @@ import * as fs from 'fs';
 import type { Octokit } from '@octokit/rest';
 
 import * as markdown from './markdown';
-import * as status from './status';
 
 import type { ConfigSection, RepoContext, Section, Issue } from './types';
 
@@ -34,6 +33,7 @@ export async function run(inputs: {
             
             const month = MONTHS_AGO.toLocaleString('default', { month: 'long' });
             var date_text = MONTHS_AGO.toISOString().split('T')[0]
+
             const issues_open = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], date_text, 'open');
             const issues_closed = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], date_text, 'closed');
             issues.push({month_text : month,  issues_open: issues_open, issues_closed:issues_closed})
@@ -80,7 +80,7 @@ function filterIssue(issue: Octokit.IssuesListForRepoResponseItem, excludeLabels
 
 function generateReport(title: string, sections: Section[], repoContext: RepoContext): string {
     return Array.from([
-        ...markdown.generateSummary(title, sections),
+        ...markdown.generateSummary(title, sections, repoContext),
         //...markdown.generateDetails(sections, repoContext)
     ]).join('\n');
 }
