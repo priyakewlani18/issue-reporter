@@ -43,7 +43,8 @@ export async function run(inputs: {
 
         sections.push({
             ...configSection,
-            issues
+            issues,
+            status:""
         }); 
     };
 

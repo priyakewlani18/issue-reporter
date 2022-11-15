@@ -21,4 +21,5 @@ export interface ConfigSection {
 // What comes out of the config file plus whatever else we need to write the report
 export type Section = ConfigSection & {
     issues: any,
+    status: any
 }
