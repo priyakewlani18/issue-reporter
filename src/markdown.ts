@@ -1,17 +1,18 @@
 import type { Issue, RepoContext, Section } from './types';
 import {arrayToTable} from "./convertotable"
+import { getStatus } from './status';
 
 
 
 
-export function* generateSummary(title: string, sections: Section[]) {
+export function* generateSummary(title: string, sections: Section[], repoContext:RepoContext) {
     yield h3(title);
     yield p("The table below shows data for last few months,There might we some error(approximate data) as we are not tracing issues which are very old as we can not go back in history too much and we make a since query")
     yield h3('Summary');
-    yield '| Section Title | description | Labels | Threshold | Monthly Count | Totals Open Now |';
-    yield '| :--- |  :----: | :----: |  :----:  |  :----:  |  :----:  |';
+    yield '| Section Title | description | Labels | Threshold | Monthly Count | Totals Open Now | Status|';
+    yield '| :--- |  :----: | :----: |  :----:  |  :----:  |  :----: | :----: ';
     for (const section of sections) {
-        yield* sectionSummary(section);
+        yield* sectionSummary(section, repoContext);
     }
 }
 
@@ -41,36 +42,34 @@ function createtableMonthly(sections:any){
 
 } 
 
-function* sectionSummary(section: Section) {
+function* sectionSummary(section: Section, repoContext:RepoContext) {
     // When generating header links, the red status needs some additional characters at the front because of the emoji it uses.
     // However GitHub-Flavored Markdown generates IDs for its headings, the other statuses aren't affected and just drop theirs.
     // It probably has to do with the Unicode ranges.
     const redStatusIdFragment = '%EF%B8%8F';
-    const sectionAnchor = '#'
+    
+    let issueQuery = issuesQuery(repoContext, section.labels, section.excludeLabels || [])
+
+    let sectionAnchor = '#'
         + ('❤️🥵')
         + `-${hyphenate(section.section)}-query`;
      
-    const section_prefix =  `| ${link(section.section, sectionAnchor)} | ${section.description || "" }   | ${section.labels.map(code).concat((section.excludeLabels || []).map(x => strike(code(x)))).join(', ')} | ${section.threshold}|`
+    sectionAnchor = issueQuery
     let pervious_count_open = 0;
     let pervious_count_close = 0
-    //const issues = section.issues;
-    
+
     let data_list = []
     for( const sect of section.issues){
         data_list.push({ month: sect.month_text , open_count: (sect.issues_open.length - pervious_count_open), close_count:(sect.issues_closed.length - pervious_count_close) })
 
-        //section_middle = section_middle + `${sect.month_text} : ${sect.issues.length - pervious_count}` + `,`
         pervious_count_close = sect.issues_closed.length
         pervious_count_open = sect.issues_open.length
     }
     let convertedata = createtableMonthly(data_list)
-    console.log(convertedata)
-    yield  section_prefix + convertedata + `|`+ `${pervious_count_open}`+ `|`;
-    // const redStatusIdFragment = '%EF%B8%8F';
+    const section_prefix =  `| ${link(section.section, sectionAnchor)} | ${section.description || "" }   | ${section.labels.map(code).concat((section.excludeLabels || []).map(x => strike(code(x)))).join(', ')} | ${section.threshold}|`
+    let sectionstatus =  getStatus(pervious_count_open, section.threshold)
 
-    // const sectionAnchor = '#'
-    //     + (section.status === '❤️🥵' ? redStatusIdFragment : '')
-    //     + `-${hyphenate(section.section)}-query`;
+    yield  section_prefix + convertedata + `|`+ `${pervious_count_open}`+ `|` + `${sectionstatus}` + `|`;
 
     // yield `| ${link(section.section, sectionAnchor)} | ${section.labels.map(code).concat((section.excludeLabels || []).map(x => strike(code(x)))).join(', ')} | ${section.threshold} | ${section.issues.length} | ${section.status} |`;
 }
