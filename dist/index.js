@@ -4527,10 +4527,10 @@ async function queryIssues(octokit, repoContext, labels, excludeLabels, since, s
     // It won't let you use the endpoint method as documented: https://octokit.github.io/rest.js/v17#pagination.
     // Work around by using the route string instead.
     //octokit.issues.listForRepo,
-    "GET /repos/:owner/:repo/issues", Object.assign(Object.assign({}, repoContext), { labels: labels.join(','), state: state, created_after: since }), (response) => response.data.filter(issue => filterIssue(issue, excludeLabels)));
+    "GET /repos/:owner/:repo/issues", Object.assign(Object.assign({}, repoContext), { labels: labels.join(','), state: state }), (response) => response.data.filter(issue => filterIssue(issue, excludeLabels, since)));
 }
-function filterIssue(issue, excludeLabels) {
-    return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name));
+function filterIssue(issue, excludeLabels, since) {
+    return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name)) && issue.created_at >= since;
 }
 function generateReport(title, sections, repoContext) {
     return Array.from([
