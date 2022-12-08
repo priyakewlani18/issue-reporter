@@ -28,14 +28,16 @@ export async function run(inputs: {
             
             let current_date = new Date();
             const MONTHS_AGO = new Date(current_date.getFullYear(), current_date.getMonth(), 1);
+            const END_DATE_MONTH = new Date(current_date.getFullYear(), current_date.getMonth()-mt+1, 0);
 
             MONTHS_AGO.setMonth(MONTHS_AGO.getMonth() - mt);
             
             const month = MONTHS_AGO.toLocaleString('default', { month: 'long' });
-            var date_text = MONTHS_AGO.toISOString().split('T')[0]
+            var start_date_text = MONTHS_AGO.toISOString().split('T')[0]
+            var end_date_text = END_DATE_MONTH.toISOString().split('T')[0]
 
-            const issues_open = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], date_text, 'open');
-            const issues_closed = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], date_text, 'closed');
+            const issues_open = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'open');
+            const issues_closed = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'closed');
             issues.push({month_text : month,  issues_open: issues_open, issues_closed:issues_closed})
 
         }
@@ -58,7 +60,7 @@ export async function run(inputs: {
 }
 
 // See https://octokit.github.io/rest.js/v17#issues-list-for-repo.
-async function queryIssues(octokit: Octokit, repoContext: RepoContext, labels: string[], excludeLabels: string[], since: string, state:string): Promise<Issue[]> {
+async function queryIssues(octokit: Octokit, repoContext: RepoContext, labels: string[], excludeLabels: string[], start_date_text: string, end_date_text: string, state:string): Promise<Issue[]> {
     return await octokit.paginate(
         // There's a bug in the Octokit type declaration for `paginate`.
         // It won't let you use the endpoint method as documented: https://octokit.github.io/rest.js/v17#pagination.
@@ -70,14 +72,14 @@ async function queryIssues(octokit: Octokit, repoContext: RepoContext, labels: s
             labels: labels.join(','),
             state: state   
         },
-        (response: Octokit.Response<Octokit.IssuesListForRepoResponse>) => response.data.filter(issue => filterIssue(issue, excludeLabels, since, state)));
+        (response: Octokit.Response<Octokit.IssuesListForRepoResponse>) => response.data.filter(issue => filterIssue(issue, excludeLabels, start_date_text, end_date_text, state)));
 }
 
-function filterIssue(issue: Octokit.IssuesListForRepoResponseItem, excludeLabels: string[], since:string, state:string) {
+function filterIssue(issue: Octokit.IssuesListForRepoResponseItem, excludeLabels: string[], start_date_text: string, end_date_text: string, state:string) {
     if (state === 'open')
-        return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name)) && issue.created_at >=since;
+        return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name)) && (issue.created_at >=start_date_text && issue.created_at <= end_date_text) ;
     if (state === 'closed' )
-        return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name)) && issue.closed_at!>=since;
+        return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name)) && (issue.closed_at!>=start_date_text && issue.closed_at! <= end_date_text);
 }
 
 function generateReport(title: string, sections: Section[], repoContext: RepoContext): string {
