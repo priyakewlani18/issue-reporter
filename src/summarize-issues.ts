@@ -70,11 +70,14 @@ async function queryIssues(octokit: Octokit, repoContext: RepoContext, labels: s
             labels: labels.join(','),
             state: state   
         },
-        (response: Octokit.Response<Octokit.IssuesListForRepoResponse>) => response.data.filter(issue => filterIssue(issue, excludeLabels, since)));
+        (response: Octokit.Response<Octokit.IssuesListForRepoResponse>) => response.data.filter(issue => filterIssue(issue, excludeLabels, since, state)));
 }
 
-function filterIssue(issue: Octokit.IssuesListForRepoResponseItem, excludeLabels: string[], since:string) {
-    return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name)) && issue.created_at >=since;
+function filterIssue(issue: Octokit.IssuesListForRepoResponseItem, excludeLabels: string[], since:string, state:string) {
+    if (state === 'open')
+        return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name)) && issue.created_at >=since;
+    if (state === 'closed' )
+        return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name)) && issue.closed_at!>=since;
 }
 
 function generateReport(title: string, sections: Section[], repoContext: RepoContext): string {
