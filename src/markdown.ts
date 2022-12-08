@@ -60,7 +60,7 @@ function* sectionSummary(section: Section, repoContext:RepoContext) {
 
     let data_list = []
     for( const sect of section.issues){
-        data_list.push({ month: sect.month_text , open_count: (sect.issues_open.length - pervious_count_open), close_count:(sect.issues_closed.length - pervious_count_close) })
+        data_list.push({ month: sect.month_text , open_count: (sect.issues_open.length), close_count:(sect.issues_closed.length) })
 
         pervious_count_close = sect.issues_closed.length
         pervious_count_open = sect.issues_open.length
