@@ -10367,18 +10367,16 @@ function* sectionSummary(section, repoContext) {
         + ('❤️🥵')
         + `-${hyphenate(section.section)}-query`;
     sectionAnchor = issueQuery;
-    let pervious_count_open = 0;
-    let pervious_count_close = 0;
+    let total_count_open = 0;
     let data_list = [];
     for (const sect of section.issues) {
         data_list.push({ month: sect.month_text, open_count: (sect.issues_open.length), close_count: (sect.issues_closed.length) });
-        pervious_count_close = sect.issues_closed.length;
-        pervious_count_open = sect.issues_open.length;
+        total_count_open += sect.issues_open.length;
     }
     let convertedata = createtableMonthly(data_list);
     const section_prefix = `| ${link(section.section, sectionAnchor)} | ${section.description || ""}   | ${section.labels.map(code).concat((section.excludeLabels || []).map(x => strike(code(x)))).join(', ')} | ${section.threshold}|`;
-    let sectionstatus = (0, status_1.getStatus)(pervious_count_open, section.threshold);
-    yield section_prefix + convertedata + `|` + `${pervious_count_open}` + `|` + `${sectionstatus}` + `|`;
+    let sectionstatus = (0, status_1.getStatus)(total_count_open, section.threshold);
+    yield section_prefix + convertedata + `|` + `${total_count_open}` + `|` + `${sectionstatus}` + `|`;
     // yield `| ${link(section.section, sectionAnchor)} | ${section.labels.map(code).concat((section.excludeLabels || []).map(x => strike(code(x)))).join(', ')} | ${section.threshold} | ${section.issues.length} | ${section.status} |`;
 }
 function* sectionDetails(section, repoContext) {
