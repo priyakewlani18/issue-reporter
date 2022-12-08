@@ -78,8 +78,8 @@ async function queryIssues(octokit: Octokit, repoContext: RepoContext, labels: s
 function filterIssue(issue: Octokit.IssuesListForRepoResponseItem, excludeLabels: string[], start_date_text: string, end_date_text: string, state:string) {
     if (state === 'open')
         return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name)) && (issue.created_at >=start_date_text && issue.created_at <= end_date_text) ;
-    if (state === 'closed' )
-        return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name)) && (issue.closed_at!>=start_date_text && issue.closed_at! <= end_date_text);
+    if (state === 'closed' && issue.closed_at)
+        return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name)) && (issue.closed_at>=start_date_text && issue.closed_at <= end_date_text);
 }
 
 function generateReport(title: string, sections: Section[], repoContext: RepoContext): string {
