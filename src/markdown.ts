@@ -9,7 +9,7 @@ export function* generateSummary(title: string, sections: Section[], repoContext
     yield h3(title);
     yield p("The table below shows data for last few months,There might we some error(approximate data) as we are not tracing issues which are very old as we can not go back in history too much and we make a since query")
     yield h3('Summary');
-    yield '| Section Title | description | Labels | Threshold | Monthly Count | Totals Open Now | Status|';
+    yield '| Section Title | description | Labels | Threshold | Weekly Count | Totals Open Now | Status|';
     yield '| :--- |  :----: | :----: |  :----:  |  :----:  |  :----: | :----: ';
     for (const section of sections) {
         yield* sectionSummary(section, repoContext);

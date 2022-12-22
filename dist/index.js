@@ -4507,17 +4507,18 @@ async function run(inputs) {
     for (const configSection of configSections) {
         let issues = [];
         let configmonths = configSection.months || 3;
-        for (var mt = 0; mt < configmonths; mt++) {
+        let week_string = ['This Week', 'Last Week', 'Last Week Ago'];
+        for (var mt = 0; mt < 3; mt++) {
             let current_date = new Date();
-            const MONTHS_AGO = new Date(current_date.getFullYear(), current_date.getMonth(), 1);
-            const END_DATE_MONTH = new Date(current_date.getFullYear(), current_date.getMonth() - mt + 1, 0);
-            MONTHS_AGO.setMonth(MONTHS_AGO.getMonth() - mt);
-            const month = MONTHS_AGO.toLocaleString('default', { month: 'long' });
-            var start_date_text = MONTHS_AGO.toISOString().split('T')[0];
-            var end_date_text = END_DATE_MONTH.toISOString().split('T')[0];
+            let day = current_date.getDay();
+            let diff = current_date.getDate() - day + (day == 0 ? -6 : 1) - 7 * mt;
+            let start_date = new Date(current_date.setDate(diff)); //start of the week
+            let end_date = new Date(current_date.setDate(diff + 6)); //end of the week
+            var start_date_text = start_date.toISOString().split('T')[0];
+            var end_date_text = end_date.toISOString().split('T')[0];
             const issues_open = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'open');
             const issues_closed = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'closed');
-            issues.push({ month_text: month, issues_open: issues_open, issues_closed: issues_closed });
+            issues.push({ month_text: week_string[mt], issues_open: issues_open, issues_closed: issues_closed });
         }
         issues.pop(); // pulling out last metrics as it would be incorrect always , because we don't have a base value
         sections.push(Object.assign(Object.assign({}, configSection), { issues, status: "" }));
@@ -10331,7 +10332,7 @@ function* generateSummary(title, sections, repoContext) {
     yield h3(title);
     yield p("The table below shows data for last few months,There might we some error(approximate data) as we are not tracing issues which are very old as we can not go back in history too much and we make a since query");
     yield h3('Summary');
-    yield '| Section Title | description | Labels | Threshold | Monthly Count | Totals Open Now | Status|';
+    yield '| Section Title | description | Labels | Threshold | Weekly Count | Totals Open Now | Status|';
     yield '| :--- |  :----: | :----: |  :----:  |  :----:  |  :----: | :----: ';
     for (const section of sections) {
         yield* sectionSummary(section, repoContext);
