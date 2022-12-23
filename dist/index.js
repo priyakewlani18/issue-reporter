@@ -4514,11 +4514,11 @@ async function run(inputs) {
             let diff = current_date.getDate() - day + (day == 0 ? -6 : 1) - 7 * mt;
             let start_date = new Date(current_date.setDate(diff)); //start of the week
             let end_date = new Date(current_date.setDate(diff + 6)); //end of the week
-            var start_date_text = start_date.toISOString().split('T')[0];
-            var end_date_text = end_date.toISOString().split('T')[0];
+            let start_date_text = start_date.toISOString().split('T')[0];
+            let end_date_text = end_date.toISOString().split('T')[0];
             const issues_open = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'open');
             const issues_closed = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'closed');
-            issues.push({ month_text: week_string[mt], issues_open: issues_open, issues_closed: issues_closed });
+            issues.push({ week_text: week_string[mt], issues_open: issues_open, issues_closed: issues_closed });
         }
         //issues.pop() // pulling out last metrics as it would be incorrect always , because we don't have a base value
         sections.push(Object.assign(Object.assign({}, configSection), { issues, status: "" }));
@@ -10371,7 +10371,7 @@ function* sectionSummary(section, repoContext) {
     let total_count_open = 0;
     let data_list = [];
     for (const sect of section.issues) {
-        data_list.push({ month: sect.month_text, open_count: (sect.issues_open.length), close_count: (sect.issues_closed.length) });
+        data_list.push({ week: sect.week_text, open_count: (sect.issues_open.length), close_count: (sect.issues_closed.length) });
         total_count_open += sect.issues_open.length;
     }
     let convertedata = createtableMonthly(data_list);
