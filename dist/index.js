@@ -4520,7 +4520,7 @@ async function run(inputs) {
             const issues_closed = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'closed');
             issues.push({ month_text: week_string[mt], issues_open: issues_open, issues_closed: issues_closed });
         }
-        issues.pop(); // pulling out last metrics as it would be incorrect always , because we don't have a base value
+        //issues.pop() // pulling out last metrics as it would be incorrect always , because we don't have a base value
         sections.push(Object.assign(Object.assign({}, configSection), { issues, status: "" }));
     }
     ;

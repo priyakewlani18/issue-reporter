@@ -43,7 +43,7 @@ export async function run(inputs: {
             issues.push({month_text : week_string[mt],  issues_open: issues_open, issues_closed: issues_closed})
 
         }
-        issues.pop() // pulling out last metrics as it would be incorrect always , because we don't have a base value
+       //issues.pop() // pulling out last metrics as it would be incorrect always , because we don't have a base value
 
         sections.push({
             ...configSection,
