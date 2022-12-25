@@ -4508,6 +4508,8 @@ async function run(inputs) {
         let issues = [];
         let configmonths = configSection.months || 3;
         let week_string = ['This Week', 'Last Week', 'Last Week Ago'];
+        let total_issues_open_length = 0;
+        var issues_open_count = 0;
         for (var mt = 0; mt < 3; mt++) {
             let current_date = new Date();
             let day = current_date.getDay();
@@ -4517,8 +4519,16 @@ async function run(inputs) {
             let start_date_text = start_date.toISOString().split('T')[0];
             let end_date_text = end_date.toISOString().split('T')[0];
             const issues_open = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'open');
+            if (mt === 0) {
+                total_issues_open_length = issues_open.length; // total issues open till current date
+                issues_open_count = issues_open.length;
+            }
+            else {
+                issues_open_count = issues_open_count - issues_close_count; // issues open count of the previous week is the issues open count minus issues closed in that week.
+            }
+            issues.push({ week_text: week_string[mt], issues_open_length: issues_open_count, total_issues_open_length: total_issues_open_length });
             const issues_closed = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'closed');
-            issues.push({ week_text: week_string[mt], issues_open: issues_open, issues_closed: issues_closed });
+            var issues_close_count = issues_closed.length;
         }
         //issues.pop() // pulling out last metrics as it would be incorrect always , because we don't have a base value
         sections.push(Object.assign(Object.assign({}, configSection), { issues, status: "" }));
@@ -4542,7 +4552,7 @@ async function queryIssues(octokit, repoContext, labels, excludeLabels, start_da
 }
 function filterIssue(issue, excludeLabels, start_date_text, end_date_text, state) {
     if (state === 'open')
-        return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name)) && (issue.created_at >= start_date_text && issue.created_at <= end_date_text);
+        return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name));
     if (state === 'closed' && issue.closed_at)
         return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name)) && (issue.closed_at >= start_date_text && issue.closed_at <= end_date_text);
 }
@@ -10330,7 +10340,7 @@ exports.generateSummary = void 0;
 const status_1 = __webpack_require__(895);
 function* generateSummary(title, sections, repoContext) {
     yield h3(title);
-    yield p("The table below shows data for last few months,There might we some error(approximate data) as we are not tracing issues which are very old as we can not go back in history too much and we make a since query");
+    yield p("The table below shows data for last few weeks,There might be some error(approximate data) as we are not tracing issues which are very old as we can not go back in history too much and we make a since query");
     yield h3('Summary');
     yield '| Section Title | description | Labels | Threshold | Weekly Count | Totals Open Now | Status|';
     yield '| :--- |  :----: | :----: |  :----:  |  :----:  |  :----: | :----: ';
@@ -10371,8 +10381,8 @@ function* sectionSummary(section, repoContext) {
     let total_count_open = 0;
     let data_list = [];
     for (const sect of section.issues) {
-        data_list.push({ week: sect.week_text, open_count: (sect.issues_open.length), close_count: (sect.issues_closed.length) });
-        total_count_open += sect.issues_open.length;
+        data_list.push({ week: sect.week_text, open_count: (sect.issues_open_length) });
+        total_count_open += sect.total_issues_open_length;
     }
     let convertedata = createtableMonthly(data_list);
     const section_prefix = `| ${link(section.section, sectionAnchor)} | ${section.description || ""}   | ${section.labels.map(code).concat((section.excludeLabels || []).map(x => strike(code(x)))).join(', ')} | ${section.threshold}|`;

@@ -25,11 +25,14 @@ export async function run(inputs: {
         let configmonths = configSection.months || 3;
 
         let week_string = ['This Week', 'Last Week', 'Last Week Ago'];
+        let total_issues_open_length = 0;
+        var issues_open_count = 0;
         
         for( var mt = 0; mt < 3; mt++){
             
             let current_date = new Date();
             let day = current_date.getDay();
+            
 
             let diff = current_date.getDate() - day + (day == 0 ? -6:1) - 7 * mt;
             let start_date = new Date(current_date.setDate(diff)) //start of the week
@@ -39,8 +42,21 @@ export async function run(inputs: {
             let end_date_text = end_date.toISOString().split('T')[0]
 
             const issues_open = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'open');
+            
+
+            if (mt===0) {
+                total_issues_open_length = issues_open.length;// total issues open till current date
+                issues_open_count = issues_open.length;
+            }
+            else {
+                    issues_open_count = issues_open_count - issues_close_count; // issues open count of the previous week is the issues open count minus issues closed in that week.
+
+            }
+
+            issues.push({week_text : week_string[mt],  issues_open_length: issues_open_count, total_issues_open_length: total_issues_open_length})
+
             const issues_closed = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'closed');
-            issues.push({week_text : week_string[mt],  issues_open: issues_open, issues_closed: issues_closed})
+            var issues_close_count = issues_closed.length;
 
         }
        //issues.pop() // pulling out last metrics as it would be incorrect always , because we don't have a base value
@@ -79,7 +95,7 @@ async function queryIssues(octokit: Octokit, repoContext: RepoContext, labels: s
 
 function filterIssue(issue: Octokit.IssuesListForRepoResponseItem, excludeLabels: string[], start_date_text: string, end_date_text: string, state:string) {
     if (state === 'open')
-        return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name)) && (issue.created_at >=start_date_text && issue.created_at <= end_date_text) ;
+        return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name));
     if (state === 'closed' && issue.closed_at)
         return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name)) && (issue.closed_at>=start_date_text && issue.closed_at <= end_date_text);
 }
