@@ -38,25 +38,26 @@ export async function run(inputs: {
             let start_date = new Date(current_date.setDate(diff)) //start of the week
             let end_date = new Date(current_date.setDate(diff + 6)) //end of the week
 
+
+            const total_issues_start_date = new Date("2022-10-01");
+
+            let total_issues_start_date_text = total_issues_start_date.toISOString().split('T')[0]
             let start_date_text = start_date.toISOString().split('T')[0]
             let end_date_text = end_date.toISOString().split('T')[0]
 
-            const issues_open = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'open');
-            
+            const total_issues_open = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], total_issues_start_date_text, '', 'open'); //total Issues open since oct 2021.
 
             if (mt===0) {
-                total_issues_open_length = issues_open.length;// total issues open till current date
-                issues_open_count = issues_open.length;
-            }
-            else {
-                    issues_open_count = issues_open_count===0? issues_open_count :issues_open_count - issues_close_count; // issues open count of the previous week is the issues open count minus issues closed in that week.
-
+                total_issues_open_length = total_issues_open.length;// total issues open from october till current date
+                issues_open_count = total_issues_open_length;
             }
 
             issues.push({week_text : week_string[mt],  issues_open_length: issues_open_count, total_issues_open_length: total_issues_open_length})
 
+            const issues_open = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'open');
             const issues_closed = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'closed');
             var issues_close_count = issues_closed.length;
+            issues_open_count = issues_open_count + issues_close_count - issues_open.length; //issue open count of the previous week
 
         }
        //issues.pop() // pulling out last metrics as it would be incorrect always , because we don't have a base value
@@ -95,7 +96,7 @@ async function queryIssues(octokit: Octokit, repoContext: RepoContext, labels: s
 
 function filterIssue(issue: Octokit.IssuesListForRepoResponseItem, excludeLabels: string[], start_date_text: string, end_date_text: string, state:string) {
     if (state === 'open')
-        return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name));
+        return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name)) && (issue.created_at >=start_date_text && issue.created_at <= end_date_text) ;
     if (state === 'closed' && issue.closed_at)
         return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name)) && (issue.closed_at>=start_date_text && issue.closed_at <= end_date_text);
 }

@@ -4516,19 +4516,20 @@ async function run(inputs) {
             let diff = current_date.getDate() - day + (day == 0 ? -6 : 1) - 7 * mt;
             let start_date = new Date(current_date.setDate(diff)); //start of the week
             let end_date = new Date(current_date.setDate(diff + 6)); //end of the week
+            const total_issues_start_date = new Date("2022-10-01");
+            let total_issues_start_date_text = total_issues_start_date.toISOString().split('T')[0];
             let start_date_text = start_date.toISOString().split('T')[0];
             let end_date_text = end_date.toISOString().split('T')[0];
-            const issues_open = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'open');
+            const total_issues_open = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], total_issues_start_date_text, '', 'open'); //total Issues open since oct 2021.
             if (mt === 0) {
-                total_issues_open_length = issues_open.length; // total issues open till current date
-                issues_open_count = issues_open.length;
-            }
-            else {
-                issues_open_count = issues_open_count === 0 ? issues_open_count : issues_open_count - issues_close_count; // issues open count of the previous week is the issues open count minus issues closed in that week.
+                total_issues_open_length = total_issues_open.length; // total issues open from october till current date
+                issues_open_count = total_issues_open_length;
             }
             issues.push({ week_text: week_string[mt], issues_open_length: issues_open_count, total_issues_open_length: total_issues_open_length });
+            const issues_open = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'open');
             const issues_closed = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'closed');
             var issues_close_count = issues_closed.length;
+            issues_open_count = issues_open_count + issues_close_count - issues_open.length; //issue open count of the previous week
         }
         //issues.pop() // pulling out last metrics as it would be incorrect always , because we don't have a base value
         sections.push(Object.assign(Object.assign({}, configSection), { issues, status: "" }));
@@ -4552,7 +4553,7 @@ async function queryIssues(octokit, repoContext, labels, excludeLabels, start_da
 }
 function filterIssue(issue, excludeLabels, start_date_text, end_date_text, state) {
     if (state === 'open')
-        return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name));
+        return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name)) && (issue.created_at >= start_date_text && issue.created_at <= end_date_text);
     if (state === 'closed' && issue.closed_at)
         return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name)) && (issue.closed_at >= start_date_text && issue.closed_at <= end_date_text);
 }
@@ -10340,9 +10341,9 @@ exports.generateSummary = void 0;
 const status_1 = __webpack_require__(895);
 function* generateSummary(title, sections, repoContext) {
     yield h3(title);
-    yield p("The table below shows data for last few weeks,There might be some error(approximate data) as we are not tracing issues which are very old as we can not go back in history too much and we make a since query");
+    yield p("The table below shows data for the last few weeks and open count since Oct'22 ,There might be some error(approximate data) as we are not tracing issues which are very old as we can not go back in history too much and we make a since query");
     yield h3('Summary');
-    yield '| Section Title | description | Labels | Threshold | Weekly Count | Totals Open Now | Status|';
+    yield '| Section Title | description | Labels | Threshold | Weekly Count | Totals Open Now since Oct 2022 | Status|';
     yield '| :--- |  :----: | :----: |  :----:  |  :----:  |  :----: | :----: ';
     for (const section of sections) {
         yield* sectionSummary(section, repoContext);
