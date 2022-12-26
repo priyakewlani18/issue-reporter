@@ -28,7 +28,7 @@ export async function run(inputs: {
     for (const configSection of configSections) {
         let issues =[];
         let configmonths = configSection.months || 3;
-        let sec_index = configSection.tableIndex || 1;
+        let sec_index = (configSection.tableIndex - 1 )|| 0;
 
         let week_string = ['This Week', 'Last Week', 'Last Week Ago'];
         let total_issues_open_length = 0;
