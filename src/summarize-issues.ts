@@ -44,10 +44,10 @@ export async function run(inputs: {
             let total_issues_start_date_text = total_issues_start_date.toISOString().split('T')[0]
             let start_date_text = start_date.toISOString().split('T')[0]
             let end_date_text = end_date.toISOString().split('T')[0]
-
-            const total_issues_open = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], total_issues_start_date_text, '', 'open'); //total Issues open since oct 2021.
-
+       
+            // open issues till current date
             if (mt===0) {
+                const total_issues_open = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], total_issues_start_date_text, start_date_text, 'open'); //total Issues open since Oct 2021.
                 total_issues_open_length = total_issues_open.length;// total issues open from october till current date
                 issues_open_count = total_issues_open_length;
             }
@@ -60,7 +60,6 @@ export async function run(inputs: {
             issues_open_count = issues_open_count + issues_close_count - issues_open.length; //issue open count of the previous week
 
         }
-       //issues.pop() // pulling out last metrics as it would be incorrect always , because we don't have a base value
 
         sections.push({
             ...configSection,
