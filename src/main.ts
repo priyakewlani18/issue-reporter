@@ -9,6 +9,7 @@ async function main(): Promise<void> {
             title: core.getInput('title'),
             configPath: core.getInput('configPath'),
             outputPath: core.getInput('outputPath'),
+            tableCount: core.getInput('tableCount'),
             octokit: new github.GitHub(core.getInput('token')),
             repoContext: { ...github.context.repo }
         });

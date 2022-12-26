@@ -10,6 +10,7 @@ export async function run(inputs: {
     title: string,
     configPath: string,
     outputPath: string,
+    tableCount: string,
     octokit: Octokit,
     repoContext: RepoContext
 }) {
@@ -18,22 +19,26 @@ export async function run(inputs: {
     const configSections: ConfigSection[] = JSON.parse(config);
 
     console.log('Querying for issues ...');
-    const sections : Section [] =  [];
+    const sections : Section [][] =  [];
+
+    for (var i = 0; i < parseInt(inputs.tableCount); i++) {
+        sections [i] =  [];
+    }
 
     for (const configSection of configSections) {
         let issues =[];
         let configmonths = configSection.months || 3;
+        let sec_index = configSection.tableIndex || 1;
 
         let week_string = ['This Week', 'Last Week', 'Last Week Ago'];
         let total_issues_open_length = 0;
         var issues_open_count = 0;
         
         for( var mt = 0; mt < 3; mt++){
-            
+        
             let current_date = new Date();
             let day = current_date.getDay();
             
-
             let diff = current_date.getDate() - day + (day == 0 ? -6:1) - 7 * mt;
             let start_date = new Date(current_date.setDate(diff)) //start of the week
             let end_date = new Date(current_date.setDate(diff + 6)) //end of the week
@@ -61,20 +66,19 @@ export async function run(inputs: {
 
         }
 
-        sections.push({
+        sections[sec_index].push({
             ...configSection,
             issues,
             status:""
         }); 
+
     };
 
     console.log('Generating the report Markdown ...');
-    const report1 = generateReport(inputs.title, sections, inputs.repoContext);
-    const report2 = generateReport(inputs.title, sections, inputs.repoContext);
+    const report = generateReport(inputs.title, sections, inputs.repoContext);
 
     console.log(`Writing the Markdown to ${inputs.outputPath} ...`);
-    fs.writeFileSync(inputs.outputPath, report1, 'utf8');
-    fs.writeFileSync(inputs.outputPath, report2, 'utf8');
+    fs.writeFileSync(inputs.outputPath, report, 'utf8');
 
     console.log('Done!');
 }
@@ -102,7 +106,7 @@ function filterIssue(issue: Octokit.IssuesListForRepoResponseItem, excludeLabels
         return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name)) && (issue.closed_at>=start_date_text && issue.closed_at <= end_date_text);
 }
 
-function generateReport(title: string, sections: Section[], repoContext: RepoContext): string {
+function generateReport(title: string, sections: Section[][], repoContext: RepoContext): string {
     return Array.from([
         ...markdown.generateSummary(title, sections, repoContext),
         //...markdown.generateDetails(sections, repoContext)

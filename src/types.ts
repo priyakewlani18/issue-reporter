@@ -14,6 +14,7 @@ export interface ConfigSection {
     excludeLabels?: string[],
     threshold: number,
     months?:number,
+    tableIndex?:number,
     since?: string, 
     description?:string
 }

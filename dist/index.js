@@ -4453,6 +4453,7 @@ async function main() {
             title: core.getInput('title'),
             configPath: core.getInput('configPath'),
             outputPath: core.getInput('outputPath'),
+            tableCount: core.getInput('tableCount'),
             octokit: new github.GitHub(core.getInput('token')),
             repoContext: Object.assign({}, github.context.repo)
         });
@@ -4504,9 +4505,13 @@ async function run(inputs) {
     const configSections = JSON.parse(config);
     console.log('Querying for issues ...');
     const sections = [];
+    for (var i = 0; i < parseInt(inputs.tableCount); i++) {
+        sections[i] = [];
+    }
     for (const configSection of configSections) {
         let issues = [];
         let configmonths = configSection.months || 3;
+        let sec_index = configSection.tableIndex || 1;
         let week_string = ['This Week', 'Last Week', 'Last Week Ago'];
         let total_issues_open_length = 0;
         var issues_open_count = 0;
@@ -4532,15 +4537,13 @@ async function run(inputs) {
             var issues_close_count = issues_closed.length;
             issues_open_count = issues_open_count + issues_close_count - issues_open.length; //issue open count of the previous week
         }
-        sections.push(Object.assign(Object.assign({}, configSection), { issues, status: "" }));
+        sections[sec_index].push(Object.assign(Object.assign({}, configSection), { issues, status: "" }));
     }
     ;
     console.log('Generating the report Markdown ...');
-    const report1 = generateReport(inputs.title, sections, inputs.repoContext);
-    const report2 = generateReport(inputs.title, sections, inputs.repoContext);
+    const report = generateReport(inputs.title, sections, inputs.repoContext);
     console.log(`Writing the Markdown to ${inputs.outputPath} ...`);
-    fs.writeFileSync(inputs.outputPath, report1, 'utf8');
-    fs.writeFileSync(inputs.outputPath, report2, 'utf8');
+    fs.writeFileSync(inputs.outputPath, report, 'utf8');
     console.log('Done!');
 }
 exports.run = run;
@@ -10345,10 +10348,12 @@ function* generateSummary(title, sections, repoContext) {
     yield h3(title);
     yield p("The table below shows data for the last few weeks and open count since Oct'22 ,There might be some error(approximate data) as we are not tracing issues which are very old as we can not go back in history too much and we make a since query");
     yield h3('Summary');
-    yield '| Section Title | description | Labels | Threshold | Weekly Count | Totals Open Now since Oct 2022 | Status|';
-    yield '| :--- |  :----: | :----: |  :----:  |  :----:  |  :----: | :----: ';
-    for (const section of sections) {
-        yield* sectionSummary(section, repoContext);
+    for (var i = 0; i < sections.length; i++) {
+        yield '| Section Title | description | Labels | Threshold | Weekly Count | Totals Open Now since Oct 2022 | Status|';
+        yield '| :--- |  :----: | :----: |  :----:  |  :----:  |  :----: | :----: ';
+        for (const section of sections[i]) {
+            yield* sectionSummary(section, repoContext);
+        }
     }
 }
 exports.generateSummary = generateSummary;
