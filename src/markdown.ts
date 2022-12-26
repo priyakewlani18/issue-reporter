@@ -6,15 +6,13 @@ import { getStatus } from './status';
 
 
 export function* generateSummary(title: string, sections: Section[] [], repoContext:RepoContext) {
-    yield h3(title);
-    yield p("The table below shows data for the last few weeks and open count since Oct'22 ,There might be some error(approximate data) as we are not tracing issues which are very old as we can not go back in history too much and we make a since query")
-    yield h3('Summary');
-
 
 for(var i = 0; i < sections.length; i++) {
 
+    yield h3(title);
+    yield p("The table below shows data for the last few weeks and open count since Oct'22 ,There might be some error(approximate data) as we are not tracing issues which are very old as we can not go back in history too much and we make a since query")
+    yield h3('Summary');
     yield '| Section Title | description | Labels | Threshold | Weekly Count | Totals Open Now since Oct 2022 | Status|';
-    yield '| :--- |  :----: | :----: |  :----:  |  :----:  |  :----: | :----: ';
 
     for (const section of sections[i]) {
         yield* sectionSummary(section, repoContext);
