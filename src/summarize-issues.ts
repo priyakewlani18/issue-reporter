@@ -69,10 +69,12 @@ export async function run(inputs: {
     };
 
     console.log('Generating the report Markdown ...');
-    const report = generateReport(inputs.title, sections, inputs.repoContext);
+    const report1 = generateReport(inputs.title, sections, inputs.repoContext);
+    const report2 = generateReport(inputs.title, sections, inputs.repoContext);
 
     console.log(`Writing the Markdown to ${inputs.outputPath} ...`);
-    fs.writeFileSync(inputs.outputPath, report, 'utf8');
+    fs.writeFileSync(inputs.outputPath, report1, 'utf8');
+    fs.writeFileSync(inputs.outputPath, report2, 'utf8');
 
     console.log('Done!');
 }
