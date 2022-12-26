@@ -62,7 +62,7 @@ function* sectionSummary(section: Section, repoContext:RepoContext) {
     for( const sect of section.issues){
         data_list.push({ week: sect.week_text , open_count: (sect.issues_open_length) })
 
-        total_count_open += sect.total_issues_open_length
+        total_count_open = sect.total_issues_open_length
     }
     let convertedata = createtableMonthly(data_list)
     const section_prefix =  `| ${link(section.section, sectionAnchor)} | ${section.description || "" }   | ${section.labels.map(code).concat((section.excludeLabels || []).map(x => strike(code(x)))).join(', ')} | ${section.threshold}|`

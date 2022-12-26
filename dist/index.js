@@ -4524,7 +4524,7 @@ async function run(inputs) {
                 issues_open_count = issues_open.length;
             }
             else {
-                issues_open_count = issues_open_count - issues_close_count; // issues open count of the previous week is the issues open count minus issues closed in that week.
+                issues_open_count = issues_open_count === 0 ? issues_open_count : issues_open_count - issues_close_count; // issues open count of the previous week is the issues open count minus issues closed in that week.
             }
             issues.push({ week_text: week_string[mt], issues_open_length: issues_open_count, total_issues_open_length: total_issues_open_length });
             const issues_closed = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'closed');
@@ -10382,7 +10382,7 @@ function* sectionSummary(section, repoContext) {
     let data_list = [];
     for (const sect of section.issues) {
         data_list.push({ week: sect.week_text, open_count: (sect.issues_open_length) });
-        total_count_open += sect.total_issues_open_length;
+        total_count_open = sect.total_issues_open_length;
     }
     let convertedata = createtableMonthly(data_list);
     const section_prefix = `| ${link(section.section, sectionAnchor)} | ${section.description || ""}   | ${section.labels.map(code).concat((section.excludeLabels || []).map(x => strike(code(x)))).join(', ')} | ${section.threshold}|`;

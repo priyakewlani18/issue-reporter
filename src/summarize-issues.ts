@@ -49,7 +49,7 @@ export async function run(inputs: {
                 issues_open_count = issues_open.length;
             }
             else {
-                    issues_open_count = issues_open_count - issues_close_count; // issues open count of the previous week is the issues open count minus issues closed in that week.
+                    issues_open_count = issues_open_count===0? issues_open_count :issues_open_count - issues_close_count; // issues open count of the previous week is the issues open count minus issues closed in that week.
 
             }
 
