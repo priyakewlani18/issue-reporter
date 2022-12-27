@@ -15,7 +15,7 @@ export interface ConfigSection {
     threshold: number,
     months?:number,
     tableIndex?:number,
-    since?: string, 
+    since?: string,
     description?:string
 }
 
