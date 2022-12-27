@@ -33,7 +33,7 @@ export async function run(inputs: {
         let configmonths = configSection.months || 3;
         let sec_index = (configSection.tableIndex - 1 )|| 0;
 
-        let week_string = ['This Week', 'Last Week', 'Last Week Ago'];
+        let week_string = ['This Week', 'Last Week', 'Two Weeks Ago'];
         let total_issues_open_length = 0;
         var issues_open_count = 0;
         

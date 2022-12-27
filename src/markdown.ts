@@ -2,14 +2,10 @@ import type { Issue, RepoContext, Section, tableConfig } from './types';
 import {arrayToTable} from "./convertotable"
 import { getStatus } from './status';
 
-
-
-
 export function* generateSummary(title: string, sections: Section[] [], tableData: tableConfig[], repoContext:RepoContext) {
 
     yield h3(title);
     yield p("The table below shows data for the last few weeks and open count since Oct'22 ,There might be some error(approximate data) as we are not tracing issues which are very old as we can not go back in history too much and we make a since query")
-    yield h3('Summary');
 
     for(var i = 0; i < sections.length; i++) {
         yield h3(tableData[i].tableTitle);
@@ -67,7 +63,7 @@ function* sectionSummary(section: Section, repoContext:RepoContext) {
 
     let data_list = []
     for( const sect of section.issues){
-        data_list.push({ week: sect.week_text , issues_opened_count: (sect.issues_open_length) })
+        data_list.push({ week: sect.week_text , total_open_count_till: (sect.issues_open_length) })
 
         total_count_open = sect.total_issues_open_length
     }

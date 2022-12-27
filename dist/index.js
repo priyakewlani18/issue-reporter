@@ -4515,7 +4515,7 @@ async function run(inputs) {
         let issues = [];
         let configmonths = configSection.months || 3;
         let sec_index = (configSection.tableIndex - 1) || 0;
-        let week_string = ['This Week', 'Last Week', 'Last Week Ago'];
+        let week_string = ['This Week', 'Last Week', 'Two Weeks Ago'];
         let total_issues_open_length = 0;
         var issues_open_count = 0;
         for (var mt = 0; mt < 3; mt++) {
@@ -10350,7 +10350,6 @@ const status_1 = __webpack_require__(895);
 function* generateSummary(title, sections, tableData, repoContext) {
     yield h3(title);
     yield p("The table below shows data for the last few weeks and open count since Oct'22 ,There might be some error(approximate data) as we are not tracing issues which are very old as we can not go back in history too much and we make a since query");
-    yield h3('Summary');
     for (var i = 0; i < sections.length; i++) {
         yield h3(tableData[i].tableTitle);
         yield '| Section Title | description | Labels | Threshold | Weekly Count | Totals Open Now since Oct 2022 | Status|';
@@ -10393,7 +10392,7 @@ function* sectionSummary(section, repoContext) {
     let total_count_open = 0;
     let data_list = [];
     for (const sect of section.issues) {
-        data_list.push({ week: sect.week_text, issues_opened_count: (sect.issues_open_length) });
+        data_list.push({ week: sect.week_text, total_open_count_till: (sect.issues_open_length) });
         total_count_open = sect.total_issues_open_length;
     }
     let convertedata = createtableMonthly(data_list);
