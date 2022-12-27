@@ -4,31 +4,34 @@ import type { Octokit } from '@octokit/rest';
 
 import * as markdown from './markdown';
 
-import type { ConfigSection, RepoContext, Section, Issue } from './types';
+import type { ConfigSection, RepoContext, Section, Issue, tableConfig } from './types';
 
 export async function run(inputs: {
     title: string,
     configPath: string,
     outputPath: string,
-    tableCount: string,
+    tableConfigPath: string,
     octokit: Octokit,
     repoContext: RepoContext
 }) {
     console.log(`Reading the config file at ${inputs.configPath} ...`);
     const config = fs.readFileSync(inputs.configPath, 'utf8');
+    const tableConfigData = fs.readFileSync(inputs.tableConfigPath, 'utf8');
     const configSections: ConfigSection[] = JSON.parse(config);
+    const tableData : tableConfig[] = JSON.parse(tableConfigData);
 
     console.log('Querying for issues ...');
     const sections : Section [][] =  [];
+    const tableLength = tableData.length;
 
-    for (var i = 0; i < parseInt(inputs.tableCount); i++) {
+    for (var i = 0; i < tableLength; i++) {
         sections [i] =  [];
     }
 
     for (const configSection of configSections) {
         let issues =[];
         let configmonths = configSection.months || 3;
-        let sec_index = (configSection.tableIndex - 1 )|| 0;
+        let sec_index = (tableLength - 1 )|| 0;
 
         let week_string = ['This Week', 'Last Week', 'Last Week Ago'];
         let total_issues_open_length = 0;
@@ -75,7 +78,7 @@ export async function run(inputs: {
     };
 
     console.log('Generating the report Markdown ...');
-    const report = generateReport(inputs.title, sections, inputs.repoContext);
+    const report = generateReport(inputs.title, sections, tableData, inputs.repoContext);
 
     console.log(`Writing the Markdown to ${inputs.outputPath} ...`);
     fs.writeFileSync(inputs.outputPath, report, 'utf8');
@@ -106,9 +109,9 @@ function filterIssue(issue: Octokit.IssuesListForRepoResponseItem, excludeLabels
         return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name)) && (issue.closed_at>=start_date_text && issue.closed_at <= end_date_text);
 }
 
-function generateReport(title: string, sections: Section[][], repoContext: RepoContext): string {
+function generateReport(title: string, sections: Section[][], tableData: tableConfig[], repoContext: RepoContext): string {
     return Array.from([
-        ...markdown.generateSummary(title, sections, repoContext),
+        ...markdown.generateSummary(title, sections, tableData, repoContext),
         //...markdown.generateDetails(sections, repoContext)
     ]).join('\n');
 }

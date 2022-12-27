@@ -4453,7 +4453,7 @@ async function main() {
             title: core.getInput('title'),
             configPath: core.getInput('configPath'),
             outputPath: core.getInput('outputPath'),
-            tableCount: core.getInput('tableCount'),
+            tableConfigPath: core.getInput('tableConfigPath'),
             octokit: new github.GitHub(core.getInput('token')),
             repoContext: Object.assign({}, github.context.repo)
         });
@@ -4502,16 +4502,19 @@ const markdown = __importStar(__webpack_require__(716));
 async function run(inputs) {
     console.log(`Reading the config file at ${inputs.configPath} ...`);
     const config = fs.readFileSync(inputs.configPath, 'utf8');
+    const tableConfigData = fs.readFileSync(inputs.tableConfigPath, 'utf8');
     const configSections = JSON.parse(config);
+    const tableData = JSON.parse(tableConfigData);
     console.log('Querying for issues ...');
     const sections = [];
-    for (var i = 0; i < parseInt(inputs.tableCount); i++) {
+    const tableLength = tableData.length;
+    for (var i = 0; i < tableLength; i++) {
         sections[i] = [];
     }
     for (const configSection of configSections) {
         let issues = [];
         let configmonths = configSection.months || 3;
-        let sec_index = (configSection.tableIndex - 1) || 0;
+        let sec_index = (tableLength - 1) || 0;
         let week_string = ['This Week', 'Last Week', 'Last Week Ago'];
         let total_issues_open_length = 0;
         var issues_open_count = 0;
@@ -4541,7 +4544,7 @@ async function run(inputs) {
     }
     ;
     console.log('Generating the report Markdown ...');
-    const report = generateReport(inputs.title, sections, inputs.repoContext);
+    const report = generateReport(inputs.title, sections, tableData, inputs.repoContext);
     console.log(`Writing the Markdown to ${inputs.outputPath} ...`);
     fs.writeFileSync(inputs.outputPath, report, 'utf8');
     console.log('Done!');
@@ -4562,9 +4565,9 @@ function filterIssue(issue, excludeLabels, start_date_text, end_date_text, state
     if (state === 'closed' && issue.closed_at)
         return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name)) && (issue.closed_at >= start_date_text && issue.closed_at <= end_date_text);
 }
-function generateReport(title, sections, repoContext) {
+function generateReport(title, sections, tableData, repoContext) {
     return Array.from([
-        ...markdown.generateSummary(title, sections, repoContext),
+        ...markdown.generateSummary(title, sections, tableData, repoContext),
         //...markdown.generateDetails(sections, repoContext)
     ]).join('\n');
 }
@@ -10344,11 +10347,12 @@ module.exports = (promise, onFinally) => {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.generateSummary = void 0;
 const status_1 = __webpack_require__(895);
-function* generateSummary(title, sections, repoContext) {
+function* generateSummary(title, sections, tableData, repoContext) {
+    yield h3(title);
+    yield p("The table below shows data for the last few weeks and open count since Oct'22 ,There might be some error(approximate data) as we are not tracing issues which are very old as we can not go back in history too much and we make a since query");
+    yield h3('Summary');
     for (var i = 0; i < sections.length; i++) {
-        yield h3(title);
-        yield p("The table below shows data for the last few weeks and open count since Oct'22 ,There might be some error(approximate data) as we are not tracing issues which are very old as we can not go back in history too much and we make a since query");
-        yield h3('Summary');
+        yield h3(tableData[i].tableTitle);
         yield '| Section Title | description | Labels | Threshold | Weekly Count | Totals Open Now since Oct 2022 | Status|';
         yield '| :--- |  :----: | :----: |  :----:  |  :----:  |  :----: | :----: ';
         for (const section of sections[i]) {
@@ -10389,7 +10393,7 @@ function* sectionSummary(section, repoContext) {
     let total_count_open = 0;
     let data_list = [];
     for (const sect of section.issues) {
-        data_list.push({ week: sect.week_text, open_count: (sect.issues_open_length) });
+        data_list.push({ week: sect.week_text, issues_opened_count: (sect.issues_open_length) });
         total_count_open = sect.total_issues_open_length;
     }
     let convertedata = createtableMonthly(data_list);
