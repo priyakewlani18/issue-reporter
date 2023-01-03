@@ -15,6 +15,7 @@ export async function run(inputs: {
     repoContext: RepoContext
 }) {
     console.log(`Reading the config file at ${inputs.configPath} ...`);
+    console.log(`Repo Context data ${inputs.repoContext}`)
     const config = fs.readFileSync(inputs.configPath, 'utf8');
     const tableConfigData = fs.readFileSync(inputs.tableConfigPath, 'utf8');
     const configSections: ConfigSection[] = JSON.parse(config);
@@ -47,7 +48,7 @@ export async function run(inputs: {
             let end_date = new Date(current_date.setDate(diff + 6)) //end of the week
 
 
-            const total_issues_start_date = new Date("2022-10-01");
+            const total_issues_start_date = new Date("2022-10-01"); // total issues since 1st October 2022
 
             let total_issues_start_date_text = total_issues_start_date.toISOString().split('T')[0]
             let start_date_text = start_date.toISOString().split('T')[0]

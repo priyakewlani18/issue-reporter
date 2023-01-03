@@ -4501,6 +4501,7 @@ const fs = __importStar(__webpack_require__(747));
 const markdown = __importStar(__webpack_require__(716));
 async function run(inputs) {
     console.log(`Reading the config file at ${inputs.configPath} ...`);
+    console.log(`Repo Context data ${inputs.repoContext}`);
     const config = fs.readFileSync(inputs.configPath, 'utf8');
     const tableConfigData = fs.readFileSync(inputs.tableConfigPath, 'utf8');
     const configSections = JSON.parse(config);
@@ -4524,7 +4525,7 @@ async function run(inputs) {
             let diff = current_date.getDate() - day + (day == 0 ? -6 : 1) - 7 * mt;
             let start_date = new Date(current_date.setDate(diff)); //start of the week
             let end_date = new Date(current_date.setDate(diff + 6)); //end of the week
-            const total_issues_start_date = new Date("2022-10-01");
+            const total_issues_start_date = new Date("2022-10-01"); // total issues since 1st October 2022
             let total_issues_start_date_text = total_issues_start_date.toISOString().split('T')[0];
             let start_date_text = start_date.toISOString().split('T')[0];
             let end_date_text = end_date.toISOString().split('T')[0];
