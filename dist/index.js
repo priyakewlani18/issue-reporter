@@ -4540,7 +4540,7 @@ async function run(inputs) {
             let end_date_text = end_date.toISOString().split('T')[0];
             // open issues till current date
             if (mt === 0) {
-                const total_issues_open = await queryIssues(octokit, repo, owner, configSection.labels, configSection.excludeLabels || [], total_issues_start_date_text, start_date_text, 'open'); //total Issues open since Oct 2021.
+                const total_issues_open = await queryIssues(octokit, repo, owner, configSection.labels, configSection.excludeLabels || [], total_issues_start_date_text, end_date_text, 'open'); //total Issues open since Oct 2021.
                 total_issues_open_length = total_issues_open.length; // total issues open from october till current date
                 issues_open_count = total_issues_open_length;
             }
