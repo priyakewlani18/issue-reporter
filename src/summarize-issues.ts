@@ -72,15 +72,18 @@ export async function run(inputs: {
             if (mt===0) {
                 const total_issues_open = await queryIssues(octokit, repo, owner, configSection.labels, configSection.excludeLabels || [], total_issues_start_date_text, end_date_text, 'open'); //total Issues open since Oct 2021.
                 total_issues_open_length = total_issues_open.length;// total issues open from october till current date
-                issues_open_count = total_issues_open_length;
+                //issues_open_count = total_issues_open_length;
             }
 
-            issues.push({week_text : week_string[mt],  issues_open_length: issues_open_count, total_issues_open_length: total_issues_open_length})
+            
 
             const issues_open = await queryIssues(octokit, repo, owner, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'open');
             const issues_closed = await queryIssues(octokit, repo, owner, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'closed');
+            var issues_open_count = issues_open.length;
             var issues_close_count = issues_closed.length;
-            issues_open_count = issues_open_count + issues_close_count - issues_open.length; //issue open count of the previous week
+
+            issues.push({week_text : week_string[mt],  issues_open_length: issues_open_count, issues_close_length: issues_close_count, total_issues_open_length: total_issues_open_length})
+            //issues_open_count = issues_open_count + issues_close_count - issues_open.length; //issue open count of the previous week
 
         }
 
@@ -93,7 +96,7 @@ export async function run(inputs: {
     };
 
     console.log('Generating the report Markdown ...');
-    const report = generateReport(inputs.title, sections, tableData, inputs.repoContext);
+    const report = generateReport(inputs.title, sections, tableData, repo, owner);
 
     console.log(`Writing the Markdown to ${inputs.outputPath} ...`);
     fs.writeFileSync(inputs.outputPath, report, 'utf8');
@@ -125,9 +128,9 @@ function filterIssue(issue: Octokit.IssuesListForRepoResponseItem, excludeLabels
         return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name)) && (issue.closed_at>=start_date_text && issue.closed_at <= end_date_text);
 }
 
-function generateReport(title: string, sections: Section[][], tableData: tableConfig[], repoContext: RepoContext): string {
+function generateReport(title: string, sections: Section[][], tableData: tableConfig[], repo: string, owner: string): string {
     return Array.from([
-        ...markdown.generateSummary(title, sections, tableData, repoContext),
+        ...markdown.generateSummary(title, sections, tableData, repo, owner),
         //...markdown.generateDetails(sections, repoContext)
     ]).join('\n');
 }

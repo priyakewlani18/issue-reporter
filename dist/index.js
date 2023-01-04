@@ -4542,19 +4542,20 @@ async function run(inputs) {
             if (mt === 0) {
                 const total_issues_open = await queryIssues(octokit, repo, owner, configSection.labels, configSection.excludeLabels || [], total_issues_start_date_text, end_date_text, 'open'); //total Issues open since Oct 2021.
                 total_issues_open_length = total_issues_open.length; // total issues open from october till current date
-                issues_open_count = total_issues_open_length;
+                //issues_open_count = total_issues_open_length;
             }
-            issues.push({ week_text: week_string[mt], issues_open_length: issues_open_count, total_issues_open_length: total_issues_open_length });
             const issues_open = await queryIssues(octokit, repo, owner, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'open');
             const issues_closed = await queryIssues(octokit, repo, owner, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'closed');
+            var issues_open_count = issues_open.length;
             var issues_close_count = issues_closed.length;
-            issues_open_count = issues_open_count + issues_close_count - issues_open.length; //issue open count of the previous week
+            issues.push({ week_text: week_string[mt], issues_open_length: issues_open_count, issues_close_length: issues_close_count, total_issues_open_length: total_issues_open_length });
+            //issues_open_count = issues_open_count + issues_close_count - issues_open.length; //issue open count of the previous week
         }
         sections[sec_index].push(Object.assign(Object.assign({}, configSection), { issues, status: "" }));
     }
     ;
     console.log('Generating the report Markdown ...');
-    const report = generateReport(inputs.title, sections, tableData, inputs.repoContext);
+    const report = generateReport(inputs.title, sections, tableData, repo, owner);
     console.log(`Writing the Markdown to ${inputs.outputPath} ...`);
     fs.writeFileSync(inputs.outputPath, report, 'utf8');
     console.log('Done!');
@@ -4580,9 +4581,9 @@ function filterIssue(issue, excludeLabels, start_date_text, end_date_text, state
     if (state === 'closed' && issue.closed_at)
         return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name)) && (issue.closed_at >= start_date_text && issue.closed_at <= end_date_text);
 }
-function generateReport(title, sections, tableData, repoContext) {
+function generateReport(title, sections, tableData, repo, owner) {
     return Array.from([
-        ...markdown.generateSummary(title, sections, tableData, repoContext),
+        ...markdown.generateSummary(title, sections, tableData, repo, owner),
         //...markdown.generateDetails(sections, repoContext)
     ]).join('\n');
 }
@@ -10362,7 +10363,7 @@ module.exports = (promise, onFinally) => {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.generateSummary = void 0;
 const status_1 = __webpack_require__(895);
-function* generateSummary(title, sections, tableData, repoContext) {
+function* generateSummary(title, sections, tableData, repo, owner) {
     yield h3(title);
     yield p("The table below shows data for the last few weeks and open count since Oct'22 ,There might be some error(approximate data) as we are not tracing issues which are very old as we can not go back in history too much and we make a since query");
     for (var i = 0; i < sections.length; i++) {
@@ -10370,7 +10371,7 @@ function* generateSummary(title, sections, tableData, repoContext) {
         yield '| Section Title | description | Labels | Threshold | Weekly Count | Totals Open Now since Oct 2022 | Status|';
         yield '| :--- |  :----: | :----: |  :----:  |  :----:  |  :----: | :----: ';
         for (const section of sections[i]) {
-            yield* sectionSummary(section, repoContext);
+            yield* sectionSummary(section, repo, owner);
         }
     }
 }
@@ -10394,12 +10395,12 @@ function createtableMonthly(sections) {
     let rst = `<table>${$header} ${$body}</table>`;
     return rst;
 }
-function* sectionSummary(section, repoContext) {
+function* sectionSummary(section, repo, owner) {
     // When generating header links, the red status needs some additional characters at the front because of the emoji it uses.
     // However GitHub-Flavored Markdown generates IDs for its headings, the other statuses aren't affected and just drop theirs.
     // It probably has to do with the Unicode ranges.
     const redStatusIdFragment = '%EF%B8%8F';
-    let issueQuery = issuesQuery(repoContext, section.labels, section.excludeLabels || []);
+    let issueQuery = issuesQuery(repo, owner, section.labels, section.excludeLabels || []);
     let sectionAnchor = '#'
         + ('❤️🥵')
         + `-${hyphenate(section.section)}-query`;
@@ -10407,7 +10408,7 @@ function* sectionSummary(section, repoContext) {
     let total_count_open = 0;
     let data_list = [];
     for (const sect of section.issues) {
-        data_list.push({ week: sect.week_text, total_open_count_till: (sect.issues_open_length) });
+        data_list.push({ week: sect.week_text, issues_open_count: (sect.issues_open_length), issues_close_count: (sect.issues_close_length) });
         total_count_open = sect.total_issues_open_length;
     }
     let convertedata = createtableMonthly(data_list);
@@ -10416,9 +10417,9 @@ function* sectionSummary(section, repoContext) {
     yield section_prefix + convertedata + `|` + `${total_count_open}` + `|` + `${sectionstatus}` + `|`;
     // yield `| ${link(section.section, sectionAnchor)} | ${section.labels.map(code).concat((section.excludeLabels || []).map(x => strike(code(x)))).join(', ')} | ${section.threshold} | ${section.issues.length} | ${section.status} |`;
 }
-function* sectionDetails(section, repoContext) {
+function* sectionDetails(section, repo, owner) {
     const owners = sumIssuesForOwners(section.issues);
-    yield h3(`${section.section} ${link('(query)', issuesQuery(repoContext, section.labels, section.excludeLabels || []))}`);
+    yield h3(`${section.section} ${link('(query)', issuesQuery(repo, owner, section.labels, section.excludeLabels || []))}`);
     yield `Total: ${section.issues.length}\n`;
     yield `Threshold: ${section.threshold}\n`;
     yield `Labels: ${section.labels.map(code).concat((section.excludeLabels || []).map(x => strike(code(x)))).join(', ')}\n`;
@@ -10428,7 +10429,7 @@ function* sectionDetails(section, repoContext) {
     const ownersByIssueCount = Object.keys(owners).sort((a, b) => owners[b] - owners[a]);
     for (const key of ownersByIssueCount) {
         // `key` is the owner's login
-        const queryUrl = issuesQuery(repoContext, section.labels, section.excludeLabels || [], key);
+        const queryUrl = issuesQuery(repo, owner, section.labels, section.excludeLabels || [], key);
         yield `| ${link(key, queryUrl)} | ${owners[key]} |`;
     }
 }
@@ -10442,7 +10443,7 @@ const strike = (text) => `\~${text}\~`;
 // Useful for converting a header name to an HTML ID in a hacky way
 const hyphenate = (headerName) => headerName.replace(/\s+/g, '-');
 /** Construct a URL like `https://github.com/brcrista/summarize-issues-test/issues?q=is%3Aissue+is%3Aopen+label%3Aincident-repair+label%3Ashort-term`. */
-function issuesQuery(repoContext, labels, excludeLabels, assignee) {
+function issuesQuery(repo, owner, labels, excludeLabels, assignee) {
     labels = makeLabelsUrlSafe(labels);
     excludeLabels = makeLabelsUrlSafe(excludeLabels);
     const queryInputs = ['is:issue', 'is:open']
@@ -10459,7 +10460,7 @@ function issuesQuery(repoContext, labels, excludeLabels, assignee) {
     }
     // The `+` signs should not be encoded for the query to work.
     const queryString = queryInputs.map(encodeURIComponent).join('+');
-    return `https://github.com/${repoContext.owner}/${repoContext.repo}/issues?q=${queryString}`;
+    return `https://github.com/${owner}/${repo}/issues?q=${queryString}`;
 }
 function makeLabelsUrlSafe(labels) {
     // If the label contains a space, the query string needs to have it in quotes.
