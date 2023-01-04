@@ -56,15 +56,15 @@ export async function run(inputs: {
        
             // open issues till current date
             if (mt===0) {
-                const total_issues_open = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], total_issues_start_date_text, start_date_text, 'open'); //total Issues open since Oct 2021.
+                const total_issues_open = await queryIssues(inputs.octokit, inputs.repoContext.repo,inputs.repoContext.owner, configSection.labels, configSection.excludeLabels || [], total_issues_start_date_text, start_date_text, 'open'); //total Issues open since Oct 2021.
                 total_issues_open_length = total_issues_open.length;// total issues open from october till current date
                 issues_open_count = total_issues_open_length;
             }
 
             issues.push({week_text : week_string[mt],  issues_open_length: issues_open_count, total_issues_open_length: total_issues_open_length})
 
-            const issues_open = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'open');
-            const issues_closed = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'closed');
+            const issues_open = await queryIssues(inputs.octokit, inputs.repoContext.repo, inputs.repoContext.owner, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'open');
+            const issues_closed = await queryIssues(inputs.octokit, inputs.repoContext.repo, inputs.repoContext.owner, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'closed');
             var issues_close_count = issues_closed.length;
             issues_open_count = issues_open_count + issues_close_count - issues_open.length; //issue open count of the previous week
 
@@ -88,7 +88,7 @@ export async function run(inputs: {
 }
 
 // See https://octokit.github.io/rest.js/v17#issues-list-for-repo.
-async function queryIssues(octokit: Octokit, repoContext: RepoContext, labels: string[], excludeLabels: string[], start_date_text: string, end_date_text: string, state:string): Promise<Issue[]> {
+async function queryIssues(octokit: Octokit, repo: string, owner: string, labels: string[], excludeLabels: string[], start_date_text: string, end_date_text: string, state:string): Promise<Issue[]> {
     return await octokit.paginate(
         // There's a bug in the Octokit type declaration for `paginate`.
         // It won't let you use the endpoint method as documented: https://octokit.github.io/rest.js/v17#pagination.
@@ -96,7 +96,8 @@ async function queryIssues(octokit: Octokit, repoContext: RepoContext, labels: s
         //octokit.issues.listForRepo,
         "GET /repos/:owner/:repo/issues",
         {
-            ...repoContext,
+            repo,
+            owner,
             labels: labels.join(','),
             state: state   
         },

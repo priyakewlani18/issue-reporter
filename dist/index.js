@@ -4531,13 +4531,13 @@ async function run(inputs) {
             let end_date_text = end_date.toISOString().split('T')[0];
             // open issues till current date
             if (mt === 0) {
-                const total_issues_open = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], total_issues_start_date_text, start_date_text, 'open'); //total Issues open since Oct 2021.
+                const total_issues_open = await queryIssues(inputs.octokit, inputs.repoContext.repo, inputs.repoContext.owner, configSection.labels, configSection.excludeLabels || [], total_issues_start_date_text, start_date_text, 'open'); //total Issues open since Oct 2021.
                 total_issues_open_length = total_issues_open.length; // total issues open from october till current date
                 issues_open_count = total_issues_open_length;
             }
             issues.push({ week_text: week_string[mt], issues_open_length: issues_open_count, total_issues_open_length: total_issues_open_length });
-            const issues_open = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'open');
-            const issues_closed = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'closed');
+            const issues_open = await queryIssues(inputs.octokit, inputs.repoContext.repo, inputs.repoContext.owner, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'open');
+            const issues_closed = await queryIssues(inputs.octokit, inputs.repoContext.repo, inputs.repoContext.owner, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'closed');
             var issues_close_count = issues_closed.length;
             issues_open_count = issues_open_count + issues_close_count - issues_open.length; //issue open count of the previous week
         }
@@ -4552,13 +4552,18 @@ async function run(inputs) {
 }
 exports.run = run;
 // See https://octokit.github.io/rest.js/v17#issues-list-for-repo.
-async function queryIssues(octokit, repoContext, labels, excludeLabels, start_date_text, end_date_text, state) {
+async function queryIssues(octokit, repo, owner, labels, excludeLabels, start_date_text, end_date_text, state) {
     return await octokit.paginate(
     // There's a bug in the Octokit type declaration for `paginate`.
     // It won't let you use the endpoint method as documented: https://octokit.github.io/rest.js/v17#pagination.
     // Work around by using the route string instead.
     //octokit.issues.listForRepo,
-    "GET /repos/:owner/:repo/issues", Object.assign(Object.assign({}, repoContext), { labels: labels.join(','), state: state }), (response) => response.data.filter(issue => filterIssue(issue, excludeLabels, start_date_text, end_date_text, state)));
+    "GET /repos/:owner/:repo/issues", {
+        repo,
+        owner,
+        labels: labels.join(','),
+        state: state
+    }, (response) => response.data.filter(issue => filterIssue(issue, excludeLabels, start_date_text, end_date_text, state)));
 }
 function filterIssue(issue, excludeLabels, start_date_text, end_date_text, state) {
     if (state === 'open')
