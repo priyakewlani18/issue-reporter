@@ -77,12 +77,12 @@ export async function run(inputs: {
 
             
 
-            const issues_open = await queryIssues(octokit, repo, owner, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'open');
+            const issues_open = await queryIssues(octokit, repo, owner, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'all');
             const issues_closed = await queryIssues(octokit, repo, owner, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'closed');
             var issues_open_count = issues_open.length;
             var issues_close_count = issues_closed.length;
 
-            issues.push({week_text : week_string[mt],  issues_open_length: issues_open_count, issues_close_length: issues_close_count, total_issues_open_length: total_issues_open_length})
+            issues.push({week_text : week_string[mt],  issues_open_length: issues_open_count, issues_close_length: issues_close_count, total_issues_open_length: total_issues_open_length, repo: repo, owner: owner})
             //issues_open_count = issues_open_count + issues_close_count - issues_open.length; //issue open count of the previous week
 
         }
@@ -96,7 +96,7 @@ export async function run(inputs: {
     };
 
     console.log('Generating the report Markdown ...');
-    const report = generateReport(inputs.title, sections, tableData, repo, owner);
+    const report = generateReport(inputs.title, sections, tableData);
 
     console.log(`Writing the Markdown to ${inputs.outputPath} ...`);
     fs.writeFileSync(inputs.outputPath, report, 'utf8');
@@ -122,15 +122,15 @@ async function queryIssues(octokit: Octokit, repo: string, owner: string, labels
 }
 
 function filterIssue(issue: Octokit.IssuesListForRepoResponseItem, excludeLabels: string[], start_date_text: string, end_date_text: string, state:string) {
-    if (state === 'open')
+    if (state === 'open' || state === 'all')
         return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name)) && (issue.created_at >=start_date_text && issue.created_at <= end_date_text) ;
     if (state === 'closed' && issue.closed_at)
         return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name)) && (issue.closed_at>=start_date_text && issue.closed_at <= end_date_text);
 }
 
-function generateReport(title: string, sections: Section[][], tableData: tableConfig[], repo: string, owner: string): string {
+function generateReport(title: string, sections: Section[][], tableData: tableConfig[]): string {
     return Array.from([
-        ...markdown.generateSummary(title, sections, tableData, repo, owner),
+        ...markdown.generateSummary(title, sections, tableData),
         //...markdown.generateDetails(sections, repoContext)
     ]).join('\n');
 }

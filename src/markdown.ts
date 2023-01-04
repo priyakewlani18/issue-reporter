@@ -2,7 +2,7 @@ import type { Issue, RepoContext, Section, tableConfig } from './types';
 import {arrayToTable} from "./convertotable"
 import { getStatus } from './status';
 
-export function* generateSummary(title: string, sections: Section[] [], tableData: tableConfig[], repo: string, owner: string) {
+export function* generateSummary(title: string, sections: Section[] [], tableData: tableConfig[]) {
 
     yield h3(title);
     yield p("The table below shows data for the last few weeks and open count since Oct'22 ,There might be some error(approximate data) as we are not tracing issues which are very old as we can not go back in history too much and we make a since query")
@@ -14,7 +14,7 @@ export function* generateSummary(title: string, sections: Section[] [], tableDat
         yield '| :--- |  :----: | :----: |  :----:  |  :----:  |  :----: | :----: ';
 
         for (const section of sections[i]) {
-            yield* sectionSummary(section, repo, owner);
+            yield* sectionSummary(section);
         }
     }
 }
@@ -45,13 +45,13 @@ function createtableMonthly(sections:any){
 
 } 
 
-function* sectionSummary(section: Section, repo: string, owner: string) {
+function* sectionSummary(section: Section) {
     // When generating header links, the red status needs some additional characters at the front because of the emoji it uses.
     // However GitHub-Flavored Markdown generates IDs for its headings, the other statuses aren't affected and just drop theirs.
     // It probably has to do with the Unicode ranges.
     const redStatusIdFragment = '%EF%B8%8F';
     
-    let issueQuery = issuesQuery(repo, owner, section.labels, section.excludeLabels || [])
+    let issueQuery = issuesQuery(section.issues.repo, section.issues.owner, section.labels, section.excludeLabels || [])
 
     let sectionAnchor = '#'
         + ('❤️🥵')

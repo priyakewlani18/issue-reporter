@@ -4544,18 +4544,18 @@ async function run(inputs) {
                 total_issues_open_length = total_issues_open.length; // total issues open from october till current date
                 //issues_open_count = total_issues_open_length;
             }
-            const issues_open = await queryIssues(octokit, repo, owner, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'open');
+            const issues_open = await queryIssues(octokit, repo, owner, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'all');
             const issues_closed = await queryIssues(octokit, repo, owner, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'closed');
             var issues_open_count = issues_open.length;
             var issues_close_count = issues_closed.length;
-            issues.push({ week_text: week_string[mt], issues_open_length: issues_open_count, issues_close_length: issues_close_count, total_issues_open_length: total_issues_open_length });
+            issues.push({ week_text: week_string[mt], issues_open_length: issues_open_count, issues_close_length: issues_close_count, total_issues_open_length: total_issues_open_length, repo: repo, owner: owner });
             //issues_open_count = issues_open_count + issues_close_count - issues_open.length; //issue open count of the previous week
         }
         sections[sec_index].push(Object.assign(Object.assign({}, configSection), { issues, status: "" }));
     }
     ;
     console.log('Generating the report Markdown ...');
-    const report = generateReport(inputs.title, sections, tableData, repo, owner);
+    const report = generateReport(inputs.title, sections, tableData);
     console.log(`Writing the Markdown to ${inputs.outputPath} ...`);
     fs.writeFileSync(inputs.outputPath, report, 'utf8');
     console.log('Done!');
@@ -4576,14 +4576,14 @@ async function queryIssues(octokit, repo, owner, labels, excludeLabels, start_da
     }, (response) => response.data.filter(issue => filterIssue(issue, excludeLabels, start_date_text, end_date_text, state)));
 }
 function filterIssue(issue, excludeLabels, start_date_text, end_date_text, state) {
-    if (state === 'open')
+    if (state === 'open' || state === 'all')
         return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name)) && (issue.created_at >= start_date_text && issue.created_at <= end_date_text);
     if (state === 'closed' && issue.closed_at)
         return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name)) && (issue.closed_at >= start_date_text && issue.closed_at <= end_date_text);
 }
-function generateReport(title, sections, tableData, repo, owner) {
+function generateReport(title, sections, tableData) {
     return Array.from([
-        ...markdown.generateSummary(title, sections, tableData, repo, owner),
+        ...markdown.generateSummary(title, sections, tableData),
         //...markdown.generateDetails(sections, repoContext)
     ]).join('\n');
 }
@@ -10363,7 +10363,7 @@ module.exports = (promise, onFinally) => {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.generateSummary = void 0;
 const status_1 = __webpack_require__(895);
-function* generateSummary(title, sections, tableData, repo, owner) {
+function* generateSummary(title, sections, tableData) {
     yield h3(title);
     yield p("The table below shows data for the last few weeks and open count since Oct'22 ,There might be some error(approximate data) as we are not tracing issues which are very old as we can not go back in history too much and we make a since query");
     for (var i = 0; i < sections.length; i++) {
@@ -10371,7 +10371,7 @@ function* generateSummary(title, sections, tableData, repo, owner) {
         yield '| Section Title | description | Labels | Threshold | Weekly Count | Totals Open Now since Oct 2022 | Status|';
         yield '| :--- |  :----: | :----: |  :----:  |  :----:  |  :----: | :----: ';
         for (const section of sections[i]) {
-            yield* sectionSummary(section, repo, owner);
+            yield* sectionSummary(section);
         }
     }
 }
@@ -10395,12 +10395,12 @@ function createtableMonthly(sections) {
     let rst = `<table>${$header} ${$body}</table>`;
     return rst;
 }
-function* sectionSummary(section, repo, owner) {
+function* sectionSummary(section) {
     // When generating header links, the red status needs some additional characters at the front because of the emoji it uses.
     // However GitHub-Flavored Markdown generates IDs for its headings, the other statuses aren't affected and just drop theirs.
     // It probably has to do with the Unicode ranges.
     const redStatusIdFragment = '%EF%B8%8F';
-    let issueQuery = issuesQuery(repo, owner, section.labels, section.excludeLabels || []);
+    let issueQuery = issuesQuery(section.issues.repo, section.issues.owner, section.labels, section.excludeLabels || []);
     let sectionAnchor = '#'
         + ('❤️🥵')
         + `-${hyphenate(section.section)}-query`;
