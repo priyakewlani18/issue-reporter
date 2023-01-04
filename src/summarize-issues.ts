@@ -12,6 +12,7 @@ export async function run(inputs: {
     outputPath: string,
     tableConfigPath: string,
     octokit: Octokit,
+    octokitRemoteRepo: Octokit,
     repoContext: RepoContext
 }) {
     console.log(`Reading the config file at ${inputs.configPath} ...`);
@@ -25,6 +26,10 @@ export async function run(inputs: {
     const sections : Section [][] =  [];
     const tableLength = tableData.length;
 
+    let octokit = inputs.octokit;
+    let repo = inputs.repoContext.repo;
+    let owner = inputs.repoContext.owner;
+
     for (var i = 0; i < tableLength; i++) {
         sections [i] =  [];
     }
@@ -33,6 +38,14 @@ export async function run(inputs: {
         let issues =[];
         let configmonths = configSection.months || 3;
         let sec_index = (configSection.tableIndex - 1 )|| 0;
+ 
+
+        if(configSection.repo) {
+            octokit = inputs.octokitRemoteRepo;
+            repo = configSection.repo;
+            owner = configSection.owner;
+       
+        }
 
         let week_string = ['This Week', 'Last Week', 'Two Weeks Ago'];
         let total_issues_open_length = 0;
@@ -56,15 +69,15 @@ export async function run(inputs: {
        
             // open issues till current date
             if (mt===0) {
-                const total_issues_open = await queryIssues(inputs.octokit, inputs.repoContext.repo,inputs.repoContext.owner, configSection.labels, configSection.excludeLabels || [], total_issues_start_date_text, start_date_text, 'open'); //total Issues open since Oct 2021.
+                const total_issues_open = await queryIssues(octokit, repo, owner, configSection.labels, configSection.excludeLabels || [], total_issues_start_date_text, start_date_text, 'open'); //total Issues open since Oct 2021.
                 total_issues_open_length = total_issues_open.length;// total issues open from october till current date
                 issues_open_count = total_issues_open_length;
             }
 
             issues.push({week_text : week_string[mt],  issues_open_length: issues_open_count, total_issues_open_length: total_issues_open_length})
 
-            const issues_open = await queryIssues(inputs.octokit, inputs.repoContext.repo, inputs.repoContext.owner, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'open');
-            const issues_closed = await queryIssues(inputs.octokit, inputs.repoContext.repo, inputs.repoContext.owner, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'closed');
+            const issues_open = await queryIssues(octokit, repo, owner, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'open');
+            const issues_closed = await queryIssues(octokit, repo, owner, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'closed');
             var issues_close_count = issues_closed.length;
             issues_open_count = issues_open_count + issues_close_count - issues_open.length; //issue open count of the previous week
 

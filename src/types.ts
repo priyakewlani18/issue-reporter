@@ -16,7 +16,9 @@ export interface ConfigSection {
     months?:number,
     tableIndex?:number,
     since?: string,
-    description?:string
+    description?:string,
+    repo?:string,
+    owner?:string
 }
 
 export interface tableConfig {
