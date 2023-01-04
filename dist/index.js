@@ -4502,6 +4502,7 @@ const markdown = __importStar(__webpack_require__(716));
 async function run(inputs) {
     console.log(`Reading the config file at ${inputs.configPath} ...`);
     console.log(`Repo Context data ${inputs.repoContext}`);
+    console.log(`Repo Context data ${inputs.repoContext.owner} ${inputs.repoContext.repo}`);
     const config = fs.readFileSync(inputs.configPath, 'utf8');
     const tableConfigData = fs.readFileSync(inputs.tableConfigPath, 'utf8');
     const configSections = JSON.parse(config);
