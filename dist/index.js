@@ -4544,6 +4544,7 @@ async function run(inputs) {
                 total_issues_open_length = total_issues_open.length; // total issues open from october till current date
                 //issues_open_count = total_issues_open_length;
             }
+            console.log(`Label ${configSection.labels} Start Date ${start_date_text} End Date ${end_date_text}`);
             const issues_open = await queryIssues(octokit, repo, owner, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'all');
             const issues_closed = await queryIssues(octokit, repo, owner, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'closed');
             var issues_open_count = issues_open.length;
