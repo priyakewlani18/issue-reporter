@@ -51,7 +51,7 @@ function* sectionSummary(section: Section) {
     // It probably has to do with the Unicode ranges.
     const redStatusIdFragment = '%EF%B8%8F';
     
-    let issueQuery = issuesQuery(section.issues.repo, section.issues.owner, section.labels, section.excludeLabels || [])
+    let issueQuery = issuesQuery(section.repo, section.owner, section.labels, section.excludeLabels || [])
 
     let sectionAnchor = '#'
         + ('❤️🥵')

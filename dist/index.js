@@ -10400,7 +10400,7 @@ function* sectionSummary(section) {
     // However GitHub-Flavored Markdown generates IDs for its headings, the other statuses aren't affected and just drop theirs.
     // It probably has to do with the Unicode ranges.
     const redStatusIdFragment = '%EF%B8%8F';
-    let issueQuery = issuesQuery(section.issues.repo, section.issues.owner, section.labels, section.excludeLabels || []);
+    let issueQuery = issuesQuery(section.repo, section.owner, section.labels, section.excludeLabels || []);
     let sectionAnchor = '#'
         + ('❤️🥵')
         + `-${hyphenate(section.section)}-query`;
