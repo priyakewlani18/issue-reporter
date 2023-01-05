@@ -49,40 +49,55 @@ export async function run(inputs: {
 
         let week_string = ['This Week', 'Last Week', 'Two Weeks Ago'];
         let total_issues_open_length = 0;
-        var issues_open_count = 0;
+        let issues_open_count = 0;
+        let issues_close_count = 0;
         
-        for( var mt = 0; mt < 3; mt++){
+        for( let mt = 0; mt < 3; mt++){
         
             let current_date = new Date();
             let day = current_date.getDay();
             
             let diff = current_date.getDate() - day + (day == 0 ? -6:1) - 7 * mt;
             let start_date = new Date(current_date.setDate(diff)) //start of the week
-            let end_date = new Date(current_date.setDate(diff + 6)) //end of the week
+            current_date = new Date(); //again set the current date to present
+            let end_date = new Date(current_date.setDate(diff + 7)) //end of the week
 
 
 
             const total_issues_start_date = new Date("2022-10-01"); // total issues since 1st October 2022
 
-            let total_issues_start_date_text = total_issues_start_date.toISOString().split('T')[0]
-            let start_date_text = start_date.toISOString().split('T')[0]
-            let end_date_text = end_date.toISOString().split('T')[0]
+            let total_issues_start_date_text = total_issues_start_date.toISOString()
+            let start_date_text = start_date.toISOString()
+            let end_date_text = end_date.toISOString()
        
             // open issues till current date
             if (mt===0) {
                 const total_issues_open = await queryIssues(octokit, repo, owner, configSection.labels, configSection.excludeLabels || [], total_issues_start_date_text, end_date_text, 'open'); //total Issues open since Oct 2021.
                 total_issues_open_length = total_issues_open.length;// total issues open from october till current date
-                //issues_open_count = total_issues_open_length;
             }
 
             console.log(`Label ${configSection.labels} Start Date ${start_date_text} End Date ${end_date_text}`)
 
             const issues_open = await queryIssues(octokit, repo, owner, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'all');
             const issues_closed = await queryIssues(octokit, repo, owner, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'closed');
-            var issues_open_count = issues_open.length;
-            var issues_close_count = issues_closed.length;
+            
+             
+             issues_open_count = issues_open.length;
+             issues_close_count = issues_closed.length;
 
-            issues.push({week_text : week_string[mt],  issues_open_length: issues_open_count, issues_close_length: issues_close_count, total_issues_open_length: total_issues_open_length, repo: repo, owner: owner})
+             for( let index = 0; index < issues_open_count; index++){
+
+                console.log(`Issues Data - Label ${configSection.labels} , Issue open url ${issues_open[index].url}`);
+            
+             }
+
+             for( let index = 0; index < issues_close_count; index++){
+
+                console.log(`Issues Data - Label ${configSection.labels} , Issue close url ${issues_closed[index].url}`);
+            
+             }
+
+            issues.push({week_text : week_string[mt],  issues_open_count: issues_open_count, issues_close_count: issues_close_count, total_issues_open_length: total_issues_open_length, repo: repo, owner: owner})
             //issues_open_count = issues_open_count + issues_close_count - issues_open.length; //issue open count of the previous week
 
         }
@@ -116,16 +131,16 @@ async function queryIssues(octokit: Octokit, repo: string, owner: string, labels
             repo,
             owner,
             labels: labels.join(','),
-            state: state   
+            state: state
         },
         (response: Octokit.Response<Octokit.IssuesListForRepoResponse>) => response.data.filter(issue => filterIssue(issue, excludeLabels, start_date_text, end_date_text, state)));
 }
 
 function filterIssue(issue: Octokit.IssuesListForRepoResponseItem, excludeLabels: string[], start_date_text: string, end_date_text: string, state:string) {
     if (state === 'open' || state === 'all')
-        return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name)) && (issue.created_at >=start_date_text && issue.created_at <= end_date_text) ;
+        return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name)) && (issue.created_at >=start_date_text && issue.created_at < end_date_text) ;
     if (state === 'closed' && issue.closed_at)
-        return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name)) && (issue.closed_at>=start_date_text && issue.closed_at <= end_date_text);
+        return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name)) && (issue.closed_at>=start_date_text && issue.closed_at < end_date_text);
 }
 
 function generateReport(title: string, sections: Section[][], tableData: tableConfig[]): string {
