@@ -63,7 +63,7 @@ function* sectionSummary(section: Section) {
 
     let data_list = []
     for( const sect of section.issues){
-        data_list.push({ week: sect.week_text , issues_open_count: (sect.issues_open_length), issues_close_count: (sect.issues_close_length) })
+        data_list.push({ week: sect.week_text , issues_open_count: (sect.issues_open_count), issues_close_count: (sect.issues_close_count) })
 
         total_count_open = sect.total_issues_open_length
     }
