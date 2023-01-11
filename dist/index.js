@@ -3853,7 +3853,10 @@ var HttpCodes;
     HttpCodes[HttpCodes["NotAcceptable"] = 406] = "NotAcceptable";
     HttpCodes[HttpCodes["ProxyAuthenticationRequired"] = 407] = "ProxyAuthenticationRequired";
     HttpCodes[HttpCodes["RequestTimeout"] = 408] = "RequestTimeout";
-    HttpCodes[HttpCodes["Conflict"] = 409] = "Conflict";
+    HttpCodes[HttpCodes["
+    
+    
+    "] = 409] = "Conflict";
     HttpCodes[HttpCodes["Gone"] = 410] = "Gone";
     HttpCodes[HttpCodes["TooManyRequests"] = 429] = "TooManyRequests";
     HttpCodes[HttpCodes["InternalServerError"] = 500] = "InternalServerError";
@@ -4455,6 +4458,7 @@ async function main() {
             outputPath: core.getInput('outputPath'),
             tableConfigPath: core.getInput('tableConfigPath'),
             octokit: new github.GitHub(core.getInput('token')),
+            octokitRemoteRepo: new github.GitHub(core.getInput('remoteRepoToken')),
             repoContext: Object.assign({}, github.context.repo)
         });
     }
@@ -4501,7 +4505,6 @@ const fs = __importStar(__webpack_require__(747));
 const markdown = __importStar(__webpack_require__(716));
 async function run(inputs) {
     console.log(`Reading the config file at ${inputs.configPath} ...`);
-    console.log(`Repo Context data ${inputs.repoContext}`);
     console.log(`Repo Context data ${inputs.repoContext.owner} ${inputs.repoContext.repo}`);
     const config = fs.readFileSync(inputs.configPath, 'utf8');
     const tableConfigData = fs.readFileSync(inputs.tableConfigPath, 'utf8');
@@ -4510,6 +4513,9 @@ async function run(inputs) {
     console.log('Querying for issues ...');
     const sections = [];
     const tableLength = tableData.length;
+    let octokit = inputs.octokit;
+    let repo = inputs.repoContext.repo;
+    let owner = inputs.repoContext.owner;
     for (var i = 0; i < tableLength; i++) {
         sections[i] = [];
     }
@@ -4517,59 +4523,78 @@ async function run(inputs) {
         let issues = [];
         let configmonths = configSection.months || 3;
         let sec_index = (configSection.tableIndex - 1) || 0;
+        if (configSection.repo) {
+            octokit = inputs.octokitRemoteRepo;
+            repo = configSection.repo;
+            owner = configSection.owner;
+        }
         let week_string = ['This Week', 'Last Week', 'Two Weeks Ago'];
         let total_issues_open_length = 0;
-        var issues_open_count = 0;
-        for (var mt = 0; mt < 3; mt++) {
+        let issues_open_count = 0;
+        let issues_close_count = 0;
+        for (let mt = 0; mt < 3; mt++) {
             let current_date = new Date();
             let day = current_date.getDay();
             let diff = current_date.getDate() - day + (day == 0 ? -6 : 1) - 7 * mt;
             let start_date = new Date(current_date.setDate(diff)); //start of the week
-            let end_date = new Date(current_date.setDate(diff + 6)); //end of the week
+            current_date = new Date(); //again set the current date to present
+            let end_date = new Date(current_date.setDate(diff + 7)); //end of the week
             const total_issues_start_date = new Date("2022-10-01"); // total issues since 1st October 2022
-            let total_issues_start_date_text = total_issues_start_date.toISOString().split('T')[0];
-            let start_date_text = start_date.toISOString().split('T')[0];
-            let end_date_text = end_date.toISOString().split('T')[0];
+            let total_issues_start_date_text = total_issues_start_date.toISOString();
+            let start_date_text = start_date.toISOString();
+            let end_date_text = end_date.toISOString();
             // open issues till current date
             if (mt === 0) {
-                const total_issues_open = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], total_issues_start_date_text, start_date_text, 'open'); //total Issues open since Oct 2021.
+                const total_issues_open = await queryIssues(octokit, repo, owner, configSection.labels, configSection.excludeLabels || [], total_issues_start_date_text, end_date_text, 'open'); //total Issues open since Oct 2021.
                 total_issues_open_length = total_issues_open.length; // total issues open from october till current date
-                issues_open_count = total_issues_open_length;
             }
-            issues.push({ week_text: week_string[mt], issues_open_length: issues_open_count, total_issues_open_length: total_issues_open_length });
-            const issues_open = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'open');
-            const issues_closed = await queryIssues(inputs.octokit, inputs.repoContext, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'closed');
-            var issues_close_count = issues_closed.length;
-            issues_open_count = issues_open_count + issues_close_count - issues_open.length; //issue open count of the previous week
+            console.log(`Label ${configSection.labels} Start Date ${start_date_text} End Date ${end_date_text}`);
+            const issues_open = await queryIssues(octokit, repo, owner, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'all');
+            const issues_closed = await queryIssues(octokit, repo, owner, configSection.labels, configSection.excludeLabels || [], start_date_text, end_date_text, 'closed');
+            issues_open_count = issues_open.length;
+            issues_close_count = issues_closed.length;
+            for (let index = 0; index < issues_open_count; index++) {
+                console.log(`Issues Data - Label ${configSection.labels} , Issue open url ${issues_open[index].url}`);
+            }
+            for (let index = 0; index < issues_close_count; index++) {
+                console.log(`Issues Data - Label ${configSection.labels} , Issue close url ${issues_closed[index].url}`);
+            }
+            issues.push({ week_text: week_string[mt], issues_open_count: issues_open_count, issues_close_count: issues_close_count, total_issues_open_length: total_issues_open_length, repo: repo, owner: owner });
+            //issues_open_count = issues_open_count + issues_close_count - issues_open.length; //issue open count of the previous week
         }
         sections[sec_index].push(Object.assign(Object.assign({}, configSection), { issues, status: "" }));
     }
     ;
     console.log('Generating the report Markdown ...');
-    const report = generateReport(inputs.title, sections, tableData, inputs.repoContext);
+    const report = generateReport(inputs.title, sections, tableData);
     console.log(`Writing the Markdown to ${inputs.outputPath} ...`);
     fs.writeFileSync(inputs.outputPath, report, 'utf8');
     console.log('Done!');
 }
 exports.run = run;
 // See https://octokit.github.io/rest.js/v17#issues-list-for-repo.
-async function queryIssues(octokit, repoContext, labels, excludeLabels, start_date_text, end_date_text, state) {
+async function queryIssues(octokit, repo, owner, labels, excludeLabels, start_date_text, end_date_text, state) {
     return await octokit.paginate(
     // There's a bug in the Octokit type declaration for `paginate`.
     // It won't let you use the endpoint method as documented: https://octokit.github.io/rest.js/v17#pagination.
     // Work around by using the route string instead.
     //octokit.issues.listForRepo,
-    "GET /repos/:owner/:repo/issues", Object.assign(Object.assign({}, repoContext), { labels: labels.join(','), state: state }), (response) => response.data.filter(issue => filterIssue(issue, excludeLabels, start_date_text, end_date_text, state)));
+    "GET /repos/:owner/:repo/issues", {
+        repo,
+        owner,
+        labels: labels.join(','),
+        state: state
+    }, (response) => response.data.filter(issue => filterIssue(issue, excludeLabels, start_date_text, end_date_text, state)));
 }
 function filterIssue(issue, excludeLabels, start_date_text, end_date_text, state) {
-    if (state === 'open')
-        return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name)) && (issue.created_at >= start_date_text && issue.created_at <= end_date_text);
+    if (state === 'open' || state === 'all')
+        return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name)) && (issue.created_at >= start_date_text && issue.created_at < end_date_text);
     if (state === 'closed' && issue.closed_at)
-        return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name)) && (issue.closed_at >= start_date_text && issue.closed_at <= end_date_text);
+        return !issue.pull_request && !issue.labels.some(label => excludeLabels.includes(label.name)) && (issue.closed_at >= start_date_text && issue.closed_at < end_date_text);
 }
-function generateReport(title, sections, tableData, repoContext) {
+function generateReport(title, sections, tableData) {
     return Array.from([
-        ...markdown.generateSummary(title, sections, tableData, repoContext),
+        ...markdown.generateSummary(title, sections, tableData),
         //...markdown.generateDetails(sections, repoContext)
     ]).join('\n');
 }
@@ -4594,7 +4619,7 @@ module.exports = require("punycode");
 /***/ 215:
 /***/ (function(module) {
 
-module.exports = {"_args":[["@octokit/rest@16.43.1","/Users/priyakewlani18/issue-reporter"]],"_from":"@octokit/rest@16.43.1","_id":"@octokit/rest@16.43.1","_inBundle":false,"_integrity":"sha512-gfFKwRT/wFxq5qlNjnW2dh+qh74XgTQ2B179UX5K1HYCluioWj8Ndbgqw2PVqa1NnVJkGHp2ovMpVn/DImlmkw==","_location":"/@octokit/rest","_phantomChildren":{"@octokit/types":"2.16.2","deprecation":"2.3.1","once":"1.4.0","os-name":"3.1.0"},"_requested":{"type":"version","registry":true,"raw":"@octokit/rest@16.43.1","name":"@octokit/rest","escapedName":"@octokit%2frest","scope":"@octokit","rawSpec":"16.43.1","saveSpec":null,"fetchSpec":"16.43.1"},"_requiredBy":["/@actions/github"],"_resolved":"https://registry.npmjs.org/@octokit/rest/-/rest-16.43.1.tgz","_spec":"16.43.1","_where":"/Users/priyakewlani18/issue-reporter","author":{"name":"Gregor Martynus","url":"https://github.com/gr2m"},"bugs":{"url":"https://github.com/octokit/rest.js/issues"},"bundlesize":[{"path":"./dist/octokit-rest.min.js.gz","maxSize":"33 kB"}],"contributors":[{"name":"Mike de Boer","email":"info@mikedeboer.nl"},{"name":"Fabian Jakobs","email":"fabian@c9.io"},{"name":"Joe Gallo","email":"joe@brassafrax.com"},{"name":"Gregor Martynus","url":"https://github.com/gr2m"}],"dependencies":{"@octokit/auth-token":"^2.4.0","@octokit/plugin-paginate-rest":"^1.1.1","@octokit/plugin-request-log":"^1.0.0","@octokit/plugin-rest-endpoint-methods":"2.4.0","@octokit/request":"^5.2.0","@octokit/request-error":"^1.0.2","atob-lite":"^2.0.0","before-after-hook":"^2.0.0","btoa-lite":"^1.0.0","deprecation":"^2.0.0","lodash.get":"^4.4.2","lodash.set":"^4.3.2","lodash.uniq":"^4.5.0","octokit-pagination-methods":"^1.1.0","once":"^1.4.0","universal-user-agent":"^4.0.0"},"description":"GitHub REST API client for Node.js","devDependencies":{"@gimenete/type-writer":"^0.1.3","@octokit/auth":"^1.1.1","@octokit/fixtures-server":"^5.0.6","@octokit/graphql":"^4.2.0","@types/node":"^13.1.0","bundlesize":"^0.18.0","chai":"^4.1.2","compression-webpack-plugin":"^3.1.0","cypress":"^3.0.0","glob":"^7.1.2","http-proxy-agent":"^4.0.0","lodash.camelcase":"^4.3.0","lodash.merge":"^4.6.1","lodash.upperfirst":"^4.3.1","lolex":"^5.1.2","mkdirp":"^1.0.0","mocha":"^7.0.1","mustache":"^4.0.0","nock":"^11.3.3","npm-run-all":"^4.1.2","nyc":"^15.0.0","prettier":"^1.14.2","proxy":"^1.0.0","semantic-release":"^17.0.0","sinon":"^8.0.0","sinon-chai":"^3.0.0","sort-keys":"^4.0.0","string-to-arraybuffer":"^1.0.0","string-to-jsdoc-comment":"^1.0.0","typescript":"^3.3.1","webpack":"^4.0.0","webpack-bundle-analyzer":"^3.0.0","webpack-cli":"^3.0.0"},"files":["index.js","index.d.ts","lib","plugins"],"homepage":"https://github.com/octokit/rest.js#readme","keywords":["octokit","github","rest","api-client"],"license":"MIT","name":"@octokit/rest","nyc":{"ignore":["test"]},"publishConfig":{"access":"public"},"release":{"publish":["@semantic-release/npm",{"path":"@semantic-release/github","assets":["dist/*","!dist/*.map.gz"]}]},"repository":{"type":"git","url":"git+https://github.com/octokit/rest.js.git"},"scripts":{"build":"npm-run-all build:*","build:browser":"npm-run-all build:browser:*","build:browser:development":"webpack --mode development --entry . --output-library=Octokit --output=./dist/octokit-rest.js --profile --json > dist/bundle-stats.json","build:browser:production":"webpack --mode production --entry . --plugin=compression-webpack-plugin --output-library=Octokit --output-path=./dist --output-filename=octokit-rest.min.js --devtool source-map","build:ts":"npm run -s update-endpoints:typescript","coverage":"nyc report --reporter=html && open coverage/index.html","generate-bundle-report":"webpack-bundle-analyzer dist/bundle-stats.json --mode=static --no-open --report dist/bundle-report.html","lint":"prettier --check '{lib,plugins,scripts,test}/**/*.{js,json,ts}' 'docs/*.{js,json}' 'docs/src/**/*' index.js README.md package.json","lint:fix":"prettier --write '{lib,plugins,scripts,test}/**/*.{js,json,ts}' 'docs/*.{js,json}' 'docs/src/**/*' index.js README.md package.json","postvalidate:ts":"tsc --noEmit --target es6 test/typescript-validate.ts","prebuild:browser":"mkdirp dist/","pretest":"npm run -s lint","prevalidate:ts":"npm run -s build:ts","start-fixtures-server":"octokit-fixtures-server","test":"nyc mocha test/mocha-node-setup.js \"test/*/**/*-test.js\"","test:browser":"cypress run --browser chrome","update-endpoints":"npm-run-all update-endpoints:*","update-endpoints:fetch-json":"node scripts/update-endpoints/fetch-json","update-endpoints:typescript":"node scripts/update-endpoints/typescript","validate:ts":"tsc --target es6 --noImplicitAny index.d.ts"},"types":"index.d.ts","version":"16.43.1"};
+module.exports = {"_args":[["@octokit/rest@16.43.1","/Users/priyakewlani18/issue-reporter-repo"]],"_from":"@octokit/rest@16.43.1","_id":"@octokit/rest@16.43.1","_inBundle":false,"_integrity":"sha512-gfFKwRT/wFxq5qlNjnW2dh+qh74XgTQ2B179UX5K1HYCluioWj8Ndbgqw2PVqa1NnVJkGHp2ovMpVn/DImlmkw==","_location":"/@octokit/rest","_phantomChildren":{"@octokit/types":"2.16.2","deprecation":"2.3.1","once":"1.4.0","os-name":"3.1.0"},"_requested":{"type":"version","registry":true,"raw":"@octokit/rest@16.43.1","name":"@octokit/rest","escapedName":"@octokit%2frest","scope":"@octokit","rawSpec":"16.43.1","saveSpec":null,"fetchSpec":"16.43.1"},"_requiredBy":["/@actions/github"],"_resolved":"https://registry.npmjs.org/@octokit/rest/-/rest-16.43.1.tgz","_spec":"16.43.1","_where":"/Users/priyakewlani18/issue-reporter-repo","author":{"name":"Gregor Martynus","url":"https://github.com/gr2m"},"bugs":{"url":"https://github.com/octokit/rest.js/issues"},"bundlesize":[{"path":"./dist/octokit-rest.min.js.gz","maxSize":"33 kB"}],"contributors":[{"name":"Mike de Boer","email":"info@mikedeboer.nl"},{"name":"Fabian Jakobs","email":"fabian@c9.io"},{"name":"Joe Gallo","email":"joe@brassafrax.com"},{"name":"Gregor Martynus","url":"https://github.com/gr2m"}],"dependencies":{"@octokit/auth-token":"^2.4.0","@octokit/plugin-paginate-rest":"^1.1.1","@octokit/plugin-request-log":"^1.0.0","@octokit/plugin-rest-endpoint-methods":"2.4.0","@octokit/request":"^5.2.0","@octokit/request-error":"^1.0.2","atob-lite":"^2.0.0","before-after-hook":"^2.0.0","btoa-lite":"^1.0.0","deprecation":"^2.0.0","lodash.get":"^4.4.2","lodash.set":"^4.3.2","lodash.uniq":"^4.5.0","octokit-pagination-methods":"^1.1.0","once":"^1.4.0","universal-user-agent":"^4.0.0"},"description":"GitHub REST API client for Node.js","devDependencies":{"@gimenete/type-writer":"^0.1.3","@octokit/auth":"^1.1.1","@octokit/fixtures-server":"^5.0.6","@octokit/graphql":"^4.2.0","@types/node":"^13.1.0","bundlesize":"^0.18.0","chai":"^4.1.2","compression-webpack-plugin":"^3.1.0","cypress":"^3.0.0","glob":"^7.1.2","http-proxy-agent":"^4.0.0","lodash.camelcase":"^4.3.0","lodash.merge":"^4.6.1","lodash.upperfirst":"^4.3.1","lolex":"^5.1.2","mkdirp":"^1.0.0","mocha":"^7.0.1","mustache":"^4.0.0","nock":"^11.3.3","npm-run-all":"^4.1.2","nyc":"^15.0.0","prettier":"^1.14.2","proxy":"^1.0.0","semantic-release":"^17.0.0","sinon":"^8.0.0","sinon-chai":"^3.0.0","sort-keys":"^4.0.0","string-to-arraybuffer":"^1.0.0","string-to-jsdoc-comment":"^1.0.0","typescript":"^3.3.1","webpack":"^4.0.0","webpack-bundle-analyzer":"^3.0.0","webpack-cli":"^3.0.0"},"files":["index.js","index.d.ts","lib","plugins"],"homepage":"https://github.com/octokit/rest.js#readme","keywords":["octokit","github","rest","api-client"],"license":"MIT","name":"@octokit/rest","nyc":{"ignore":["test"]},"publishConfig":{"access":"public"},"release":{"publish":["@semantic-release/npm",{"path":"@semantic-release/github","assets":["dist/*","!dist/*.map.gz"]}]},"repository":{"type":"git","url":"git+https://github.com/octokit/rest.js.git"},"scripts":{"build":"npm-run-all build:*","build:browser":"npm-run-all build:browser:*","build:browser:development":"webpack --mode development --entry . --output-library=Octokit --output=./dist/octokit-rest.js --profile --json > dist/bundle-stats.json","build:browser:production":"webpack --mode production --entry . --plugin=compression-webpack-plugin --output-library=Octokit --output-path=./dist --output-filename=octokit-rest.min.js --devtool source-map","build:ts":"npm run -s update-endpoints:typescript","coverage":"nyc report --reporter=html && open coverage/index.html","generate-bundle-report":"webpack-bundle-analyzer dist/bundle-stats.json --mode=static --no-open --report dist/bundle-report.html","lint":"prettier --check '{lib,plugins,scripts,test}/**/*.{js,json,ts}' 'docs/*.{js,json}' 'docs/src/**/*' index.js README.md package.json","lint:fix":"prettier --write '{lib,plugins,scripts,test}/**/*.{js,json,ts}' 'docs/*.{js,json}' 'docs/src/**/*' index.js README.md package.json","postvalidate:ts":"tsc --noEmit --target es6 test/typescript-validate.ts","prebuild:browser":"mkdirp dist/","pretest":"npm run -s lint","prevalidate:ts":"npm run -s build:ts","start-fixtures-server":"octokit-fixtures-server","test":"nyc mocha test/mocha-node-setup.js \"test/*/**/*-test.js\"","test:browser":"cypress run --browser chrome","update-endpoints":"npm-run-all update-endpoints:*","update-endpoints:fetch-json":"node scripts/update-endpoints/fetch-json","update-endpoints:typescript":"node scripts/update-endpoints/typescript","validate:ts":"tsc --target es6 --noImplicitAny index.d.ts"},"types":"index.d.ts","version":"16.43.1"};
 
 /***/ }),
 
@@ -10349,7 +10374,7 @@ module.exports = (promise, onFinally) => {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.generateSummary = void 0;
 const status_1 = __webpack_require__(895);
-function* generateSummary(title, sections, tableData, repoContext) {
+function* generateSummary(title, sections, tableData) {
     yield h3(title);
     yield p("The table below shows data for the last few weeks and open count since Oct'22 ,There might be some error(approximate data) as we are not tracing issues which are very old as we can not go back in history too much and we make a since query");
     for (var i = 0; i < sections.length; i++) {
@@ -10357,7 +10382,7 @@ function* generateSummary(title, sections, tableData, repoContext) {
         yield '| Section Title | description | Labels | Threshold | Weekly Count | Totals Open Now since Oct 2022 | Status|';
         yield '| :--- |  :----: | :----: |  :----:  |  :----:  |  :----: | :----: ';
         for (const section of sections[i]) {
-            yield* sectionSummary(section, repoContext);
+            yield* sectionSummary(section);
         }
     }
 }
@@ -10381,12 +10406,12 @@ function createtableMonthly(sections) {
     let rst = `<table>${$header} ${$body}</table>`;
     return rst;
 }
-function* sectionSummary(section, repoContext) {
+function* sectionSummary(section) {
     // When generating header links, the red status needs some additional characters at the front because of the emoji it uses.
     // However GitHub-Flavored Markdown generates IDs for its headings, the other statuses aren't affected and just drop theirs.
     // It probably has to do with the Unicode ranges.
     const redStatusIdFragment = '%EF%B8%8F';
-    let issueQuery = issuesQuery(repoContext, section.labels, section.excludeLabels || []);
+    let issueQuery = issuesQuery(section.repo, section.owner, section.labels, section.excludeLabels || []);
     let sectionAnchor = '#'
         + ('❤️🥵')
         + `-${hyphenate(section.section)}-query`;
@@ -10394,7 +10419,7 @@ function* sectionSummary(section, repoContext) {
     let total_count_open = 0;
     let data_list = [];
     for (const sect of section.issues) {
-        data_list.push({ week: sect.week_text, total_open_count_till: (sect.issues_open_length) });
+        data_list.push({ week: sect.week_text, issues_open_count: (sect.issues_open_count), issues_close_count: (sect.issues_close_count) });
         total_count_open = sect.total_issues_open_length;
     }
     let convertedata = createtableMonthly(data_list);
@@ -10403,9 +10428,9 @@ function* sectionSummary(section, repoContext) {
     yield section_prefix + convertedata + `|` + `${total_count_open}` + `|` + `${sectionstatus}` + `|`;
     // yield `| ${link(section.section, sectionAnchor)} | ${section.labels.map(code).concat((section.excludeLabels || []).map(x => strike(code(x)))).join(', ')} | ${section.threshold} | ${section.issues.length} | ${section.status} |`;
 }
-function* sectionDetails(section, repoContext) {
+function* sectionDetails(section, repo, owner) {
     const owners = sumIssuesForOwners(section.issues);
-    yield h3(`${section.section} ${link('(query)', issuesQuery(repoContext, section.labels, section.excludeLabels || []))}`);
+    yield h3(`${section.section} ${link('(query)', issuesQuery(repo, owner, section.labels, section.excludeLabels || []))}`);
     yield `Total: ${section.issues.length}\n`;
     yield `Threshold: ${section.threshold}\n`;
     yield `Labels: ${section.labels.map(code).concat((section.excludeLabels || []).map(x => strike(code(x)))).join(', ')}\n`;
@@ -10415,7 +10440,7 @@ function* sectionDetails(section, repoContext) {
     const ownersByIssueCount = Object.keys(owners).sort((a, b) => owners[b] - owners[a]);
     for (const key of ownersByIssueCount) {
         // `key` is the owner's login
-        const queryUrl = issuesQuery(repoContext, section.labels, section.excludeLabels || [], key);
+        const queryUrl = issuesQuery(repo, owner, section.labels, section.excludeLabels || [], key);
         yield `| ${link(key, queryUrl)} | ${owners[key]} |`;
     }
 }
@@ -10429,7 +10454,7 @@ const strike = (text) => `\~${text}\~`;
 // Useful for converting a header name to an HTML ID in a hacky way
 const hyphenate = (headerName) => headerName.replace(/\s+/g, '-');
 /** Construct a URL like `https://github.com/brcrista/summarize-issues-test/issues?q=is%3Aissue+is%3Aopen+label%3Aincident-repair+label%3Ashort-term`. */
-function issuesQuery(repoContext, labels, excludeLabels, assignee) {
+function issuesQuery(repo, owner, labels, excludeLabels, assignee) {
     labels = makeLabelsUrlSafe(labels);
     excludeLabels = makeLabelsUrlSafe(excludeLabels);
     const queryInputs = ['is:issue', 'is:open']
@@ -10446,7 +10471,7 @@ function issuesQuery(repoContext, labels, excludeLabels, assignee) {
     }
     // The `+` signs should not be encoded for the query to work.
     const queryString = queryInputs.map(encodeURIComponent).join('+');
-    return `https://github.com/${repoContext.owner}/${repoContext.repo}/issues?q=${queryString}`;
+    return `https://github.com/${owner}/${repo}/issues?q=${queryString}`;
 }
 function makeLabelsUrlSafe(labels) {
     // If the label contains a space, the query string needs to have it in quotes.
